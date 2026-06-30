@@ -37,6 +37,28 @@ function App() {
     }
   };
 
+const resetBin = async (deviceId, binType) => {
+  const confirmed = window.confirm(
+    `${deviceId}의 ${binType} 수거함을 비우시겠습니까?`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await axios.post(`${API_BASE_URL}/api/bins/reset`, {
+      deviceId,
+      binType,
+    });
+
+    await fetchDashboardData();
+  } catch (error) {
+    console.error(error);
+    alert('수거함 초기화에 실패했습니다.');
+  }
+};
+
   useEffect(() => {
     fetchDashboardData();
 
@@ -183,6 +205,10 @@ function App() {
                   <span>{bin.itemCount} / {bin.capacity}</span>
                   <span>{usage}%</span>
                 </div>
+                
+                <button className="reset-bin-button" onClick={() => resetBin(bin.deviceId, bin.binType)}>
+                수거함 비우기
+                </button>
               </article>
             );
           })}

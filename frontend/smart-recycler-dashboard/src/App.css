@@ -269,3 +269,19 @@ th {
     grid-template-columns: 1fr;
   }
 }
+
+.reset-bin-button {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  background: #334155;
+  color: #e5e7eb;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reset-bin-button:hover {
+  background: #475569;
+}
