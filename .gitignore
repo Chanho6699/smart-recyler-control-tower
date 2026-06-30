@@ -1,0 +1,39 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Java / Spring
+build/
+.gradle/
+out/
+*.class
+
+# Node / React
+node_modules/
+dist/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# AI models / datasets
+*.pt
+*.onnx
+*.engine
+*.weights
+datasets/
+runs/
+
+# Env
+.env
+.env.local
+
+# Docker volumes
+mysql-data/
+redis-data/

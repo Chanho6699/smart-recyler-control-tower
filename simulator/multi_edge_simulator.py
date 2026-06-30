@@ -1,0 +1,247 @@
+import argparse
+import random
+import threading
+import time
+from datetime import datetime
+
+import requests
+
+
+SAMPLE_CLASSES = [
+    {"label": "plastic_bottle", "targetBin": "PLASTIC"},
+    {"label": "plastic_cup", "targetBin": "PLASTIC"},
+    {"label": "paper_cup", "targetBin": "PAPER"},
+    {"label": "can", "targetBin": "CAN"},
+    {"label": "unknown", "targetBin": "UNKNOWN"},
+]
+
+
+class SimulationStats:
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.heartbeat_success = 0
+        self.heartbeat_fail = 0
+        self.classification_success = 0
+        self.classification_fail = 0
+        self.register_success = 0
+        self.register_fail = 0
+
+    def increase(self, field_name):
+        with self.lock:
+            current_value = getattr(self, field_name)
+            setattr(self, field_name, current_value + 1)
+
+    def snapshot(self):
+        with self.lock:
+            return {
+                "heartbeat_success": self.heartbeat_success,
+                "heartbeat_fail": self.heartbeat_fail,
+                "classification_success": self.classification_success,
+                "classification_fail": self.classification_fail,
+                "register_success": self.register_success,
+                "register_fail": self.register_fail,
+            }
+
+
+class EdgeDeviceSimulator:
+    def __init__(
+        self,
+        server_url,
+        device_id,
+        location,
+        heartbeat_interval,
+        classification_interval,
+        stats,
+        stop_event,
+    ):
+        self.server_url = server_url
+        self.device_id = device_id
+        self.location = location
+        self.heartbeat_interval = heartbeat_interval
+        self.classification_interval = classification_interval
+        self.stats = stats
+        self.stop_event = stop_event
+        self.session = requests.Session()
+
+    def register(self):
+        url = f"{self.server_url}/api/devices/register"
+        payload = {
+            "deviceId": self.device_id,
+            "location": self.location,
+        }
+
+        try:
+            response = self.session.post(url, json=payload, timeout=3)
+            if 200 <= response.status_code < 300:
+                self.stats.increase("register_success")
+            else:
+                self.stats.increase("register_fail")
+                print(f"[REGISTER FAIL] {self.device_id} status={response.status_code}, body={response.text}")
+        except requests.RequestException as e:
+            self.stats.increase("register_fail")
+            print(f"[REGISTER ERROR] {self.device_id} error={e}")
+
+    def heartbeat_loop(self):
+        url = f"{self.server_url}/api/devices/heartbeat"
+
+        while not self.stop_event.is_set():
+            payload = {
+                "deviceId": self.device_id,
+            }
+
+            try:
+                response = self.session.post(url, json=payload, timeout=3)
+                if 200 <= response.status_code < 300:
+                    self.stats.increase("heartbeat_success")
+                else:
+                    self.stats.increase("heartbeat_fail")
+                    print(f"[HEARTBEAT FAIL] {self.device_id} status={response.status_code}")
+            except requests.RequestException as e:
+                self.stats.increase("heartbeat_fail")
+                print(f"[HEARTBEAT ERROR] {self.device_id} error={e}")
+
+            jitter = random.uniform(0, 0.5)
+            time.sleep(self.heartbeat_interval + jitter)
+
+    def classification_loop(self):
+        url = f"{self.server_url}/api/classification-logs"
+
+        while not self.stop_event.is_set():
+            sample = random.choice(SAMPLE_CLASSES)
+
+            payload = {
+                "deviceId": self.device_id,
+                "label": sample["label"],
+                "confidence": round(random.uniform(0.70, 0.99), 2),
+                "targetBin": sample["targetBin"],
+                "inferenceTimeMs": random.randint(20, 130),
+                "runtimeType": "FAKE",
+            }
+
+            try:
+                response = self.session.post(url, json=payload, timeout=3)
+                if 200 <= response.status_code < 300:
+                    self.stats.increase("classification_success")
+                else:
+                    self.stats.increase("classification_fail")
+                    print(
+                        f"[CLASSIFICATION FAIL] {self.device_id} "
+                        f"status={response.status_code}, body={response.text}"
+                    )
+            except requests.RequestException as e:
+                self.stats.increase("classification_fail")
+                print(f"[CLASSIFICATION ERROR] {self.device_id} error={e}")
+
+            jitter = random.uniform(0, 0.5)
+            time.sleep(self.classification_interval + jitter)
+
+    def start(self):
+        self.register()
+
+        heartbeat_thread = threading.Thread(
+            target=self.heartbeat_loop,
+            daemon=True,
+        )
+
+        classification_thread = threading.Thread(
+            target=self.classification_loop,
+            daemon=True,
+        )
+
+        heartbeat_thread.start()
+        classification_thread.start()
+
+        return [heartbeat_thread, classification_thread]
+
+
+def print_stats_loop(stats, stop_event, interval):
+    while not stop_event.is_set():
+        time.sleep(interval)
+        snapshot = stats.snapshot()
+
+        print()
+        print("========== Simulation Stats ==========")
+        print(f"time: {datetime.now()}")
+        print(f"register_success       : {snapshot['register_success']}")
+        print(f"register_fail          : {snapshot['register_fail']}")
+        print(f"heartbeat_success      : {snapshot['heartbeat_success']}")
+        print(f"heartbeat_fail         : {snapshot['heartbeat_fail']}")
+        print(f"classification_success : {snapshot['classification_success']}")
+        print(f"classification_fail    : {snapshot['classification_fail']}")
+        print("======================================")
+        print()
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--server", default="http://localhost:8080")
+    parser.add_argument("--devices", type=int, default=10)
+    parser.add_argument("--duration", type=int, default=60)
+    parser.add_argument("--heartbeat-interval", type=float, default=5.0)
+    parser.add_argument("--classification-interval", type=float, default=3.0)
+
+    args = parser.parse_args()
+
+    print("======================================")
+    print(" Smart Recycler Multi Edge Simulator")
+    print("======================================")
+    print(f"server                  : {args.server}")
+    print(f"devices                 : {args.devices}")
+    print(f"duration seconds         : {args.duration}")
+    print(f"heartbeat interval       : {args.heartbeat_interval}")
+    print(f"classification interval  : {args.classification_interval}")
+    print("======================================")
+    print()
+
+    stats = SimulationStats()
+    stop_event = threading.Event()
+
+    devices = []
+
+    for i in range(1, args.devices + 1):
+        device_id = f"EDGE-{i:03d}"
+        location = f"Virtual Zone {i}"
+
+        device = EdgeDeviceSimulator(
+            server_url=args.server,
+            device_id=device_id,
+            location=location,
+            heartbeat_interval=args.heartbeat_interval,
+            classification_interval=args.classification_interval,
+            stats=stats,
+            stop_event=stop_event,
+        )
+
+        devices.append(device)
+
+    threads = []
+
+    for device in devices:
+        threads.extend(device.start())
+
+    stats_thread = threading.Thread(
+        target=print_stats_loop,
+        args=(stats, stop_event, 5),
+        daemon=True,
+    )
+    stats_thread.start()
+
+    try:
+        time.sleep(args.duration)
+    except KeyboardInterrupt:
+        print("\n[STOP] Keyboard interrupt received.")
+    finally:
+        stop_event.set()
+        time.sleep(1)
+
+        print()
+        print("========== Final Stats ==========")
+        final_stats = stats.snapshot()
+        for key, value in final_stats.items():
+            print(f"{key}: {value}")
+        print("=================================")
+        print("[DONE] Multi edge simulation finished.")
+
+
+if __name__ == "__main__":
+    main()
