@@ -4,10 +4,12 @@ import com.chanho.smartrecycler.device.dto.DeviceRegisterRequest;
 import com.chanho.smartrecycler.device.dto.DeviceResponse;
 import com.chanho.smartrecycler.device.dto.HeartbeatRequest;
 import com.chanho.smartrecycler.device.entity.Device;
+import com.chanho.smartrecycler.device.entity.DeviceStatus;
 import com.chanho.smartrecycler.device.repository.DeviceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -53,5 +55,21 @@ public class DeviceService {
                 .stream()
                 .map(DeviceResponse::new)
                 .toList();
+    }
+
+    @Transactional
+    public int markOfflineDevices(long offlineThresholdSeconds) {
+        LocalDateTime thresholdTime = LocalDateTime.now().minusSeconds(offlineThresholdSeconds);
+
+        List<Device> offlineCandidates = deviceRepository.findByLastHeartbeatAtBeforeAndStatus(
+                thresholdTime,
+                DeviceStatus.RUNNING
+        );
+
+        for (Device device : offlineCandidates) {
+            device.updateStatus(DeviceStatus.OFFLINE);
+        }
+
+        return offlineCandidates.size();
     }
 }

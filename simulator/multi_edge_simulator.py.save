@@ -7,14 +7,6 @@ from datetime import datetime
 import requests
 
 
-SAMPLE_CLASSES = [
-    {"label": "plastic_bottle", "targetBin": "PLASTIC"},
-    {"label": "plastic_cup", "targetBin": "PLASTIC"},
-    {"label": "paper_cup", "targetBin": "PAPER"},
-    {"label": "can", "targetBin": "CAN"},
-    {"label": "unknown", "targetBin": "UNKNOWN"},
-]
-
 SAMPLE_ERRORS = [
     {
         "errorType": "LOW_CONFIDENCE",
@@ -33,6 +25,9 @@ SAMPLE_ERRORS = [
     }
 ]
 
+
+
+
 class SimulationStats:
     def __init__(self):
         self.lock = threading.Lock()
@@ -42,8 +37,9 @@ class SimulationStats:
         self.classification_fail = 0
         self.register_success = 0
         self.register_fail = 0
-        self.error_success = 0
-        self.error_fail = 0
+	self.error_success = 0
+	self.error_fail = 0
+
     def increase(self, field_name):
         with self.lock:
             current_value = getattr(self, field_name)
@@ -58,8 +54,8 @@ class SimulationStats:
                 "classification_fail": self.classification_fail,
                 "register_success": self.register_success,
                 "register_fail": self.register_fail,
-                "error_success": self.error_success,
-                "error_fail": self.error_fail
+		"error_success": self.error_success,
+		"error_fail": self.error_fail,
             }
 
 
@@ -83,27 +79,27 @@ class EdgeDeviceSimulator:
         self.stop_event = stop_event
         self.session = requests.Session()
 
-    def send_error_event(self):
-        url = f"{self.server_url}/api/error-events"
-        sample = random.choice(SAMPLE_ERRORS)
+def send_error_event(self):
+    url = f"{self.server_url}/api/error-events"
+    sample = random.choice(SAMPLE_ERRORS)
 
-        payload = {
-            "deviceId": self.device_id,
-            "errorType": sample["errorType"],
-            "severity": sample["severity"],
-            "message": sample["message"]
-        }
+    payload = {
+        "deviceId": self.device_id,
+        "errorType": sample["errorType"],
+        "severity": sample["severity"],
+        "message": sample["message"]
+    }
 
-        try:
-            response = self.session.post(url, json=payload, timeout=3)
-            if 200 <= response.status_code < 300:
-                self.stats.increase("error_success")
-            else:
-                self.stats.increase("error_fail")
-                print(f"[ERROR EVENT FAIL] {self.device_id} status={response.status_code}")
-        except requests.RequestException as e:
+    try:
+        response = self.session.post(url, json=payload, timeout=3)
+        if 200 <= response.status_code < 300:
+            self.stats.increase("error_success")
+        else:
             self.stats.increase("error_fail")
-            print(f"[ERROR EVENT ERROR] {self.device_id} error={e}")
+            print(f"[ERROR EVENT FAIL] {self.device_id} status={response.status_code}")
+    except requests.RequestException as e:
+        self.stats.increase("error_fail")
+        print(f"[ERROR EVENT ERROR] {self.device_id} error={e}")
 
     def register(self):
         url = f"{self.server_url}/api/devices/register"
@@ -145,6 +141,8 @@ class EdgeDeviceSimulator:
             jitter = random.uniform(0, 0.5)
             time.sleep(self.heartbeat_interval + jitter)
 
+
+
     def classification_loop(self):
         url = f"{self.server_url}/api/classification-logs"
 
@@ -175,8 +173,6 @@ class EdgeDeviceSimulator:
                 print(f"[CLASSIFICATION ERROR] {self.device_id} error={e}")
 
             jitter = random.uniform(0, 0.5)
-            if random.random() < 0.05:
-                self.send_error_event()
             time.sleep(self.classification_interval + jitter)
 
     def start(self):
@@ -212,8 +208,6 @@ def print_stats_loop(stats, stop_event, interval):
         print(f"heartbeat_fail         : {snapshot['heartbeat_fail']}")
         print(f"classification_success : {snapshot['classification_success']}")
         print(f"classification_fail    : {snapshot['classification_fail']}")
-        print(f"error_success          : {snapshot['error_success']}")
-        print(f"error_fail             : {snapshot['error_fail']}")
         print("======================================")
         print()
 
