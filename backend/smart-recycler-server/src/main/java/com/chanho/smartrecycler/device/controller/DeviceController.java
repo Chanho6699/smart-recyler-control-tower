@@ -2,6 +2,7 @@ package com.chanho.smartrecycler.device.controller;
 
 import com.chanho.smartrecycler.device.dto.DeviceRegisterRequest;
 import com.chanho.smartrecycler.device.dto.DeviceResponse;
+import com.chanho.smartrecycler.device.dto.DeviceStatusUpdateRequest;
 import com.chanho.smartrecycler.device.dto.HeartbeatRequest;
 import com.chanho.smartrecycler.device.service.DeviceService;
 import jakarta.validation.Valid;
@@ -36,6 +37,15 @@ public class DeviceController {
             @Valid @RequestBody HeartbeatRequest request
     ) {
         DeviceResponse response = deviceService.heartbeat(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{deviceId}/status")
+    public ResponseEntity<DeviceResponse> updateDeviceStatus(
+            @PathVariable String deviceId,
+            @Valid @RequestBody DeviceStatusUpdateRequest request
+    ) {
+        DeviceResponse response = deviceService.updateDeviceStatus(deviceId, request);
         return ResponseEntity.ok(response);
     }
 

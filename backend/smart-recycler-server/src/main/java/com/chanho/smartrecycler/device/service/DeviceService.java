@@ -2,6 +2,7 @@ package com.chanho.smartrecycler.device.service;
 
 import com.chanho.smartrecycler.device.dto.DeviceRegisterRequest;
 import com.chanho.smartrecycler.device.dto.DeviceResponse;
+import com.chanho.smartrecycler.device.dto.DeviceStatusUpdateRequest;
 import com.chanho.smartrecycler.device.dto.HeartbeatRequest;
 import com.chanho.smartrecycler.device.entity.Device;
 import com.chanho.smartrecycler.device.entity.DeviceStatus;
@@ -49,6 +50,17 @@ public class DeviceService {
         return new DeviceResponse(savedDevice);
     }
 
+    @Transactional
+    public DeviceResponse updateDeviceStatus(String deviceId, DeviceStatusUpdateRequest request) {
+        Device device = deviceRepository.findByDeviceId(deviceId)
+                .orElseThrow(() -> new IllegalArgumentException("Device not found. deviceId=" + deviceId));
+
+        DeviceStatus status = parseDeviceStatus(request.getStatus());
+        device.updateStatus(status);
+
+        return new DeviceResponse(device);
+    }
+
     @Transactional(readOnly = true)
     public List<DeviceResponse> getDevices() {
         return deviceRepository.findAllByOrderByUpdatedAtDesc()
@@ -71,5 +83,13 @@ public class DeviceService {
         }
 
         return offlineCandidates.size();
+    }
+
+    private DeviceStatus parseDeviceStatus(String value) {
+        try {
+            return DeviceStatus.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new IllegalArgumentException("Invalid device status: " + value);
+        }
     }
 }

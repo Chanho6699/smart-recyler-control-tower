@@ -73,6 +73,25 @@ function App() {
     }
   };
 
+const updateDeviceStatus = async (deviceId, status) => {
+  const confirmed = window.confirm(`${deviceId} 상태를 ${status}로 변경하시겠습니까?`);
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await axios.patch(`${API_BASE_URL}/api/devices/${deviceId}/status`, {
+      status,
+    });
+
+    await fetchDashboardData();
+  } catch (error) {
+    console.error(error);
+    alert('단말기 상태 변경에 실패했습니다.');
+  }
+  };
+
   useEffect(() => {
     fetchDashboardData();
 
@@ -152,6 +171,7 @@ function App() {
                   <th>Location</th>
                   <th>Status</th>
                   <th>Last Heartbeat</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -163,6 +183,30 @@ function App() {
                       <StatusBadge status={device.status} />
                     </td>
                     <td>{formatDateTime(device.lastHeartbeatAt)}</td>
+                    <td>
+    <div className="device-action-group">
+      <button
+        className="device-action-button"
+        onClick={() => updateDeviceStatus(device.deviceId, 'MAINTENANCE')}
+      >
+        점검
+      </button>
+
+      <button
+        className="device-action-button"
+        onClick={() => updateDeviceStatus(device.deviceId, 'ERROR')}
+      >
+        장애
+      </button>
+
+      <button
+        className="device-action-button"
+        onClick={() => updateDeviceStatus(device.deviceId, 'RUNNING')}
+      >
+        복귀
+      </button>
+    </div>
+  </td>
                   </tr>
                 ))}
               </tbody>

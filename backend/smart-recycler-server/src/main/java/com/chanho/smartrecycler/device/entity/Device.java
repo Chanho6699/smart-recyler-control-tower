@@ -1,6 +1,7 @@
 package com.chanho.smartrecycler.device.entity;
 
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -11,7 +12,7 @@ public class Device {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String deviceId;
 
     private String location;
@@ -38,8 +39,16 @@ public class Device {
     }
 
     public void updateHeartbeat() {
-        this.status = DeviceStatus.RUNNING;
         this.lastHeartbeatAt = LocalDateTime.now();
+
+        if (this.status == DeviceStatus.OFFLINE) {
+            this.status = DeviceStatus.RUNNING;
+        }
+
+        if (this.status == null) {
+            this.status = DeviceStatus.RUNNING;
+        }
+
         this.updatedAt = LocalDateTime.now();
     }
 

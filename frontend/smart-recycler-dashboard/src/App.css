@@ -313,3 +313,24 @@ th {
   color: #94a3b8;
   font-size: 13px;
 }
+
+.device-action-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.device-action-button {
+  padding: 7px 9px;
+  border: none;
+  border-radius: 8px;
+  background: #334155;
+  color: #e5e7eb;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.device-action-button:hover {
+  background: #475569;
+}
