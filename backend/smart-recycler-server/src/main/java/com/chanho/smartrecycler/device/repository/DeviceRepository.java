@@ -20,4 +20,6 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
             LocalDateTime threshold,
             DeviceStatus status
     );
+
+    long countByStatus(DeviceStatus status);
 }
