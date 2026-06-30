@@ -30,6 +30,14 @@ public class ErrorEventController {
                 .body(response);
     }
 
+    @PatchMapping("/{id}/resolve")
+    public ResponseEntity<ErrorEventResponse> resolveErrorEvent(
+            @PathVariable Long id
+    ) {
+        ErrorEventResponse response = errorEventService.resolveErrorEvent(id);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping
     public ResponseEntity<List<ErrorEventResponse>> getErrorEvents() {
         List<ErrorEventResponse> responses = errorEventService.getErrorEvents();

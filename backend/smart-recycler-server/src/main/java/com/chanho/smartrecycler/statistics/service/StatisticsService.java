@@ -6,6 +6,7 @@ import com.chanho.smartrecycler.bin.repository.BinRepository;
 import com.chanho.smartrecycler.classification.repository.ClassificationLogRepository;
 import com.chanho.smartrecycler.device.entity.DeviceStatus;
 import com.chanho.smartrecycler.device.repository.DeviceRepository;
+import com.chanho.smartrecycler.error.entity.ErrorEventStatus;
 import com.chanho.smartrecycler.error.entity.ErrorSeverity;
 import com.chanho.smartrecycler.error.repository.ErrorEventRepository;
 import com.chanho.smartrecycler.statistics.dto.SummaryStatisticsResponse;
@@ -55,6 +56,9 @@ public class StatisticsService {
         long totalErrorEvents = errorEventRepository.count();
         long criticalErrorEvents = errorEventRepository.countBySeverity(ErrorSeverity.CRITICAL);
 
+        long resolvedErrorEvents = errorEventRepository.countByEventStatus(ErrorEventStatus.RESOLVED);
+        long openErrorEvents = totalErrorEvents - resolvedErrorEvents;
+
         List<Bin> bins = binRepository.findAll();
 
         Map<BinType, Integer> binTypeCounts = new EnumMap<>(BinType.class);
@@ -92,6 +96,8 @@ public class StatisticsService {
                 todayClassificationLogs,
                 totalErrorEvents,
                 criticalErrorEvents,
+                openErrorEvents,
+                resolvedErrorEvents,
                 totalItemsInBins,
                 binItemCounts
         );

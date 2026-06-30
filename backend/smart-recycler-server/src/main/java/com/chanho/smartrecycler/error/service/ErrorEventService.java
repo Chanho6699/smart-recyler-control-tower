@@ -36,6 +36,16 @@ public class ErrorEventService {
         return new ErrorEventResponse(savedEvent);
     }
 
+    @Transactional
+    public ErrorEventResponse resolveErrorEvent(Long id) {
+        ErrorEvent errorEvent = errorEventRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Error event not found. id=" + id));
+
+        errorEvent.resolve();
+
+        return new ErrorEventResponse(errorEvent);
+    }
+
     @Transactional(readOnly = true)
     public List<ErrorEventResponse> getErrorEvents() {
         return errorEventRepository.findAllByOrderByCreatedAtDesc()

@@ -1,6 +1,7 @@
 package com.chanho.smartrecycler.error.entity;
 
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -19,10 +20,15 @@ public class ErrorEvent {
     @Enumerated(EnumType.STRING)
     private ErrorSeverity severity;
 
+    @Enumerated(EnumType.STRING)
+    private ErrorEventStatus eventStatus;
+
     @Column(length = 1000)
     private String message;
 
     private LocalDateTime createdAt;
+
+    private LocalDateTime resolvedAt;
 
     protected ErrorEvent() {
     }
@@ -36,8 +42,14 @@ public class ErrorEvent {
         this.deviceId = deviceId;
         this.errorType = errorType;
         this.severity = severity;
+        this.eventStatus = ErrorEventStatus.OPEN;
         this.message = message;
         this.createdAt = LocalDateTime.now();
+    }
+
+    public void resolve() {
+        this.eventStatus = ErrorEventStatus.RESOLVED;
+        this.resolvedAt = LocalDateTime.now();
     }
 
     public Long getId() {
@@ -56,11 +68,22 @@ public class ErrorEvent {
         return severity;
     }
 
+    public ErrorEventStatus getEventStatus() {
+        if (eventStatus == null) {
+            return ErrorEventStatus.OPEN;
+        }
+        return eventStatus;
+    }
+
     public String getMessage() {
         return message;
     }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public LocalDateTime getResolvedAt() {
+        return resolvedAt;
     }
 }

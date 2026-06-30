@@ -15,6 +15,8 @@ public class SummaryStatisticsResponse {
 
     private long totalErrorEvents;
     private long criticalErrorEvents;
+    private long openErrorEvents;
+    private long resolvedErrorEvents;
 
     private long totalItemsInBins;
 
@@ -30,6 +32,8 @@ public class SummaryStatisticsResponse {
             long todayClassificationLogs,
             long totalErrorEvents,
             long criticalErrorEvents,
+            long openErrorEvents,
+            long resolvedErrorEvents,
             long totalItemsInBins,
             Map<String, Integer> binItemCounts
     ) {
@@ -42,6 +46,8 @@ public class SummaryStatisticsResponse {
         this.todayClassificationLogs = todayClassificationLogs;
         this.totalErrorEvents = totalErrorEvents;
         this.criticalErrorEvents = criticalErrorEvents;
+        this.openErrorEvents = openErrorEvents;
+        this.resolvedErrorEvents = resolvedErrorEvents;
         this.totalItemsInBins = totalItemsInBins;
         this.binItemCounts = binItemCounts;
     }
@@ -80,6 +86,14 @@ public class SummaryStatisticsResponse {
 
     public long getCriticalErrorEvents() {
         return criticalErrorEvents;
+    }
+
+    public long getOpenErrorEvents() {
+        return openErrorEvents;
+    }
+
+    public long getResolvedErrorEvents() {
+        return resolvedErrorEvents;
     }
 
     public long getTotalItemsInBins() {

@@ -285,3 +285,31 @@ th {
 .reset-bin-button:hover {
   background: #475569;
 }
+.status-open {
+  background: #78350f;
+  color: #fde68a;
+}
+
+.status-resolved {
+  background: #14532d;
+  color: #bbf7d0;
+}
+
+.resolve-event-button {
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.resolve-event-button:hover {
+  background: #1d4ed8;
+}
+
+.resolved-text {
+  color: #94a3b8;
+  font-size: 13px;
+}

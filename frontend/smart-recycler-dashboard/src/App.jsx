@@ -31,33 +31,47 @@ function App() {
       setErrorMessage('');
     } catch (error) {
       console.error(error);
-      setErrorMessage('서버 데이터를 불러오지 못했습니다. 백엔드 서버와 CORS 설정을 확인하세요.');
+      setErrorMessage('서버 데이터를 불러오지 못했습니다.');
     } finally {
       setLoading(false);
     }
   };
 
-const resetBin = async (deviceId, binType) => {
-  const confirmed = window.confirm(
-    `${deviceId}의 ${binType} 수거함을 비우시겠습니까?`
-  );
+  const resetBin = async (deviceId, binType) => {
+    const confirmed = window.confirm(`${deviceId}의 ${binType} 수거함을 비우시겠습니까?`);
 
-  if (!confirmed) {
-    return;
-  }
+    if (!confirmed) {
+      return;
+    }
 
-  try {
-    await axios.post(`${API_BASE_URL}/api/bins/reset`, {
-      deviceId,
-      binType,
-    });
+    try {
+      await axios.post(`${API_BASE_URL}/api/bins/reset`, {
+        deviceId,
+        binType,
+      });
 
-    await fetchDashboardData();
-  } catch (error) {
-    console.error(error);
-    alert('수거함 초기화에 실패했습니다.');
-  }
-};
+      await fetchDashboardData();
+    } catch (error) {
+      console.error(error);
+      alert('수거함 초기화에 실패했습니다.');
+    }
+  };
+
+  const resolveErrorEvent = async (eventId) => {
+    const confirmed = window.confirm('이 에러 이벤트를 처리 완료하시겠습니까?');
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await axios.patch(`${API_BASE_URL}/api/error-events/${eventId}/resolve`);
+      await fetchDashboardData();
+    } catch (error) {
+      console.error(error);
+      alert('에러 이벤트 처리 완료에 실패했습니다.');
+    }
+  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -108,11 +122,7 @@ const resetBin = async (deviceId, binType) => {
         </button>
       </header>
 
-      {errorMessage && (
-        <div className="error-banner">
-          {errorMessage}
-        </div>
-      )}
+      {errorMessage && <div className="error-banner">{errorMessage}</div>}
 
       <section className="summary-grid">
         <SummaryCard title="전체 단말기" value={summary?.totalDevices ?? 0} />
@@ -121,6 +131,8 @@ const resetBin = async (deviceId, binType) => {
         <SummaryCard title="오늘 분류 수" value={summary?.todayClassificationLogs ?? 0} />
         <SummaryCard title="전체 분류 수" value={summary?.totalClassificationLogs ?? 0} />
         <SummaryCard title="전체 에러" value={summary?.totalErrorEvents ?? 0} />
+        <SummaryCard title="미처리 에러" value={summary?.openErrorEvents ?? 0} />
+        <SummaryCard title="처리 완료 에러" value={summary?.resolvedErrorEvents ?? 0} />
         <SummaryCard title="CRITICAL 에러" value={summary?.criticalErrorEvents ?? 0} />
         <SummaryCard title="수거함 누적량" value={summary?.totalItemsInBins ?? 0} />
       </section>
@@ -202,12 +214,17 @@ const resetBin = async (deviceId, binType) => {
                 </div>
 
                 <div className="bin-card-footer">
-                  <span>{bin.itemCount} / {bin.capacity}</span>
+                  <span>
+                    {bin.itemCount} / {bin.capacity}
+                  </span>
                   <span>{usage}%</span>
                 </div>
-                
-                <button className="reset-bin-button" onClick={() => resetBin(bin.deviceId, bin.binType)}>
-                수거함 비우기
+
+                <button
+                  className="reset-bin-button"
+                  onClick={() => resetBin(bin.deviceId, bin.binType)}
+                >
+                  수거함 비우기
                 </button>
               </article>
             );
@@ -228,22 +245,43 @@ const resetBin = async (deviceId, binType) => {
                 <th>Device ID</th>
                 <th>Type</th>
                 <th>Severity</th>
+                <th>Status</th>
                 <th>Message</th>
                 <th>Created At</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              {errorEvents.slice(0, 10).map((event) => (
-                <tr key={event.id}>
-                  <td>{event.deviceId}</td>
-                  <td>{event.errorType}</td>
-                  <td>
-                    <StatusBadge status={event.severity} />
-                  </td>
-                  <td>{event.message}</td>
-                  <td>{formatDateTime(event.createdAt)}</td>
-                </tr>
-              ))}
+              {errorEvents.slice(0, 10).map((event) => {
+                const eventStatus = event.eventStatus ?? 'OPEN';
+
+                return (
+                  <tr key={event.id}>
+                    <td>{event.deviceId}</td>
+                    <td>{event.errorType}</td>
+                    <td>
+                      <StatusBadge status={event.severity} />
+                    </td>
+                    <td>
+                      <StatusBadge status={eventStatus} />
+                    </td>
+                    <td>{event.message}</td>
+                    <td>{formatDateTime(event.createdAt)}</td>
+                    <td>
+                      {eventStatus === 'OPEN' ? (
+                        <button
+                          className="resolve-event-button"
+                          onClick={() => resolveErrorEvent(event.id)}
+                        >
+                          처리 완료
+                        </button>
+                      ) : (
+                        <span className="resolved-text">완료됨</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
