@@ -1,6 +1,5 @@
 package com.chanho.smartrecycler.classification.service;
 
-import com.chanho.smartrecycler.bin.service.BinService;
 import com.chanho.smartrecycler.classification.dto.ClassificationLogCreateRequest;
 import com.chanho.smartrecycler.classification.dto.ClassificationLogResponse;
 import com.chanho.smartrecycler.classification.entity.ClassificationLog;
@@ -14,19 +13,16 @@ import java.util.List;
 public class ClassificationLogService {
 
     private final ClassificationLogRepository classificationLogRepository;
-    private final BinService binService;
 
     public ClassificationLogService(
-            ClassificationLogRepository classificationLogRepository,
-            BinService binService
+            ClassificationLogRepository classificationLogRepository
     ) {
         this.classificationLogRepository = classificationLogRepository;
-        this.binService = binService;
     }
 
     @Transactional
     public ClassificationLogResponse createLog(ClassificationLogCreateRequest request) {
-        ClassificationLog log = new ClassificationLog(
+        ClassificationLog classificationLog = new ClassificationLog(
                 request.getDeviceId(),
                 request.getLabel(),
                 request.getConfidence(),
@@ -35,12 +31,7 @@ public class ClassificationLogService {
                 request.getRuntimeType()
         );
 
-        ClassificationLog savedLog = classificationLogRepository.save(log);
-
-        binService.increaseBinCount(
-                request.getDeviceId(),
-                request.getTargetBin()
-        );
+        ClassificationLog savedLog = classificationLogRepository.save(classificationLog);
 
         return new ClassificationLogResponse(savedLog);
     }

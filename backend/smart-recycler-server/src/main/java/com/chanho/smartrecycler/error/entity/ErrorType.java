@@ -6,5 +6,6 @@ public enum ErrorType {
     LOW_CONFIDENCE,
     BIN_FULL,
     SERVER_SEND_FAILED,
+    SORTING_FAILED,
     UNKNOWN_ERROR
 }

@@ -9,6 +9,8 @@ import com.chanho.smartrecycler.device.repository.DeviceRepository;
 import com.chanho.smartrecycler.error.entity.ErrorEventStatus;
 import com.chanho.smartrecycler.error.entity.ErrorSeverity;
 import com.chanho.smartrecycler.error.repository.ErrorEventRepository;
+import com.chanho.smartrecycler.sorting.entity.SortingResultStatus;
+import com.chanho.smartrecycler.sorting.repository.SortingResultRepository;
 import com.chanho.smartrecycler.statistics.dto.SummaryStatisticsResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,17 +27,20 @@ public class StatisticsService {
 
     private final DeviceRepository deviceRepository;
     private final ClassificationLogRepository classificationLogRepository;
+    private final SortingResultRepository sortingResultRepository;
     private final ErrorEventRepository errorEventRepository;
     private final BinRepository binRepository;
 
     public StatisticsService(
             DeviceRepository deviceRepository,
             ClassificationLogRepository classificationLogRepository,
+            SortingResultRepository sortingResultRepository,
             ErrorEventRepository errorEventRepository,
             BinRepository binRepository
     ) {
         this.deviceRepository = deviceRepository;
         this.classificationLogRepository = classificationLogRepository;
+        this.sortingResultRepository = sortingResultRepository;
         this.errorEventRepository = errorEventRepository;
         this.binRepository = binRepository;
     }
@@ -43,15 +48,26 @@ public class StatisticsService {
     @Transactional(readOnly = true)
     public SummaryStatisticsResponse getSummary() {
         long totalDevices = deviceRepository.count();
+
         long runningDevices = deviceRepository.countByStatus(DeviceStatus.RUNNING);
         long offlineDevices = deviceRepository.countByStatus(DeviceStatus.OFFLINE);
         long errorDevices = deviceRepository.countByStatus(DeviceStatus.ERROR);
         long maintenanceDevices = deviceRepository.countByStatus(DeviceStatus.MAINTENANCE);
+        long stoppedDevices = deviceRepository.countByStatus(DeviceStatus.STOPPED);
 
         long totalClassificationLogs = classificationLogRepository.count();
 
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
         long todayClassificationLogs = classificationLogRepository.countByCreatedAtAfter(todayStart);
+
+        long totalSortingResults = sortingResultRepository.count();
+        long completedSortingResults = sortingResultRepository.countByStatus(SortingResultStatus.COMPLETED);
+        long failedSortingResults = sortingResultRepository.countByStatus(SortingResultStatus.FAILED);
+
+        double sortingSuccessRate = 0.0;
+        if (totalSortingResults > 0) {
+            sortingSuccessRate = (completedSortingResults * 100.0) / totalSortingResults;
+        }
 
         long totalErrorEvents = errorEventRepository.count();
         long criticalErrorEvents = errorEventRepository.countBySeverity(ErrorSeverity.CRITICAL);
@@ -92,8 +108,13 @@ public class StatisticsService {
                 offlineDevices,
                 errorDevices,
                 maintenanceDevices,
+                stoppedDevices,
                 totalClassificationLogs,
                 todayClassificationLogs,
+                totalSortingResults,
+                completedSortingResults,
+                failedSortingResults,
+                sortingSuccessRate,
                 totalErrorEvents,
                 criticalErrorEvents,
                 openErrorEvents,

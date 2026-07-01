@@ -9,9 +9,15 @@ public class SummaryStatisticsResponse {
     private long offlineDevices;
     private long errorDevices;
     private long maintenanceDevices;
+    private long stoppedDevices;
 
     private long totalClassificationLogs;
     private long todayClassificationLogs;
+
+    private long totalSortingResults;
+    private long completedSortingResults;
+    private long failedSortingResults;
+    private double sortingSuccessRate;
 
     private long totalErrorEvents;
     private long criticalErrorEvents;
@@ -28,8 +34,13 @@ public class SummaryStatisticsResponse {
             long offlineDevices,
             long errorDevices,
             long maintenanceDevices,
+            long stoppedDevices,
             long totalClassificationLogs,
             long todayClassificationLogs,
+            long totalSortingResults,
+            long completedSortingResults,
+            long failedSortingResults,
+            double sortingSuccessRate,
             long totalErrorEvents,
             long criticalErrorEvents,
             long openErrorEvents,
@@ -42,8 +53,13 @@ public class SummaryStatisticsResponse {
         this.offlineDevices = offlineDevices;
         this.errorDevices = errorDevices;
         this.maintenanceDevices = maintenanceDevices;
+        this.stoppedDevices = stoppedDevices;
         this.totalClassificationLogs = totalClassificationLogs;
         this.todayClassificationLogs = todayClassificationLogs;
+        this.totalSortingResults = totalSortingResults;
+        this.completedSortingResults = completedSortingResults;
+        this.failedSortingResults = failedSortingResults;
+        this.sortingSuccessRate = sortingSuccessRate;
         this.totalErrorEvents = totalErrorEvents;
         this.criticalErrorEvents = criticalErrorEvents;
         this.openErrorEvents = openErrorEvents;
@@ -72,12 +88,32 @@ public class SummaryStatisticsResponse {
         return maintenanceDevices;
     }
 
+    public long getStoppedDevices() {
+        return stoppedDevices;
+    }
+
     public long getTotalClassificationLogs() {
         return totalClassificationLogs;
     }
 
     public long getTodayClassificationLogs() {
         return todayClassificationLogs;
+    }
+
+    public long getTotalSortingResults() {
+        return totalSortingResults;
+    }
+
+    public long getCompletedSortingResults() {
+        return completedSortingResults;
+    }
+
+    public long getFailedSortingResults() {
+        return failedSortingResults;
+    }
+
+    public double getSortingSuccessRate() {
+        return sortingSuccessRate;
     }
 
     public long getTotalErrorEvents() {

@@ -57,6 +57,10 @@ public class Device {
         this.updatedAt = LocalDateTime.now();
     }
 
+public void changeStatus(DeviceStatus status) {
+    this.status = status;
+}
+
     public Long getId() {
         return id;
     }

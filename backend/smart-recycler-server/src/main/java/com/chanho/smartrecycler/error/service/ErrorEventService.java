@@ -37,6 +37,24 @@ public class ErrorEventService {
     }
 
     @Transactional
+    public ErrorEventResponse createSystemErrorEvent(
+            String deviceId,
+            ErrorType errorType,
+            ErrorSeverity severity,
+            String message
+    ) {
+        ErrorEvent errorEvent = new ErrorEvent(
+                deviceId,
+                errorType,
+                severity,
+                message
+        );
+
+        ErrorEvent savedEvent = errorEventRepository.save(errorEvent);
+        return new ErrorEventResponse(savedEvent);
+    }
+
+    @Transactional
     public ErrorEventResponse resolveErrorEvent(Long id) {
         ErrorEvent errorEvent = errorEventRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Error event not found. id=" + id));

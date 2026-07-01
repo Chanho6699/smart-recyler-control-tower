@@ -12,23 +12,35 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [sortingResults, setSortingResults] = useState([]);
+  const [deviceCommands, setDeviceCommands] = useState([]);
+  const [commandSubmitting, setCommandSubmitting] = useState(false);
 
   const fetchDashboardData = async () => {
     try {
-      const [summaryResponse, devicesResponse, binsResponse, errorEventsResponse] =
-        await Promise.all([
-          axios.get(`${API_BASE_URL}/api/statistics/summary`),
-          axios.get(`${API_BASE_URL}/api/devices`),
-          axios.get(`${API_BASE_URL}/api/bins`),
-          axios.get(`${API_BASE_URL}/api/error-events`),
-        ]);
+      const [
+  summaryResponse,
+  devicesResponse,
+  binsResponse,
+  errorEventsResponse,
+  sortingResultsResponse,
+  deviceCommandsResponse,
+] = await Promise.all([
+  axios.get(`${API_BASE_URL}/api/statistics/summary`),
+  axios.get(`${API_BASE_URL}/api/devices`),
+  axios.get(`${API_BASE_URL}/api/bins`),
+  axios.get(`${API_BASE_URL}/api/error-events`),
+  axios.get(`${API_BASE_URL}/api/sorting-results`),
+  axios.get(`${API_BASE_URL}/api/device-commands`),
+]);
 
-      setSummary(summaryResponse.data);
-      setDevices(devicesResponse.data);
-      setBins(binsResponse.data);
-      setErrorEvents(errorEventsResponse.data);
-      setLastUpdatedAt(new Date());
-      setErrorMessage('');
+setSummary(summaryResponse.data);
+setDevices(devicesResponse.data);
+setBins(binsResponse.data);
+setErrorEvents(errorEventsResponse.data);
+setSortingResults(sortingResultsResponse.data);
+setDeviceCommands(deviceCommandsResponse.data);
+
     } catch (error) {
       console.error(error);
       setErrorMessage('서버 데이터를 불러오지 못했습니다.');
@@ -36,6 +48,25 @@ function App() {
       setLoading(false);
     }
   };
+
+  const createDeviceCommand = async (deviceId, commandType, payload) => {
+  try {
+    setCommandSubmitting(true);
+
+    await axios.post(`${API_BASE_URL}/api/device-commands`, {
+      deviceId,
+      commandType,
+      payload,
+    });
+
+    await fetchDashboardData();
+  } catch (error) {
+    console.error('Failed to create device command:', error);
+    alert('단말기 명령 생성에 실패했습니다.');
+  } finally {
+    setCommandSubmitting(false);
+  }
+};
 
   const resetBin = async (deviceId, binType) => {
     const confirmed = window.confirm(`${deviceId}의 ${binType} 수거함을 비우시겠습니까?`);
@@ -92,6 +123,8 @@ const updateDeviceStatus = async (deviceId, status) => {
   }
   };
 
+
+  
   useEffect(() => {
     fetchDashboardData();
 
@@ -128,6 +161,58 @@ const updateDeviceStatus = async (deviceId, status) => {
     );
   }
 
+const pendingCommandCount = deviceCommands.filter(
+  (command) => command.status === 'PENDING'
+).length;
+
+const completedCommandCount = deviceCommands.filter(
+  (command) => command.status === 'COMPLETED'
+).length;
+
+const failedCommandCount = deviceCommands.filter(
+  (command) => command.status === 'FAILED'
+).length;
+
+  const hasPendingCommand = (deviceId) => {
+  return deviceCommands.some(
+    (command) =>
+      command.deviceId === deviceId &&
+      command.status === 'PENDING'
+  );
+};
+
+const isCommandButtonDisabled = (device, commandType) => {
+  if (commandSubmitting) {
+    return true;
+  }
+
+  if (hasPendingCommand(device.deviceId)) {
+    return true;
+  }
+
+  if (device.status === 'OFFLINE') {
+    return true;
+  }
+
+  if (commandType === 'EMERGENCY_STOP') {
+    return device.status === 'STOPPED';
+  }
+
+  if (commandType === 'RESUME_OPERATION') {
+    return device.status === 'RUNNING';
+  }
+
+  if (commandType === 'ENTER_MAINTENANCE') {
+    return device.status === 'MAINTENANCE';
+  }
+
+  if (commandType === 'EXIT_MAINTENANCE') {
+    return device.status !== 'MAINTENANCE';
+  }
+
+  return false;
+};
+
   return (
     <main className="page">
       <header className="dashboard-header">
@@ -145,8 +230,11 @@ const updateDeviceStatus = async (deviceId, status) => {
 
       <section className="summary-grid">
         <SummaryCard title="전체 단말기" value={summary?.totalDevices ?? 0} />
-        <SummaryCard title="RUNNING" value={summary?.runningDevices ?? 0} />
-        <SummaryCard title="OFFLINE" value={summary?.offlineDevices ?? 0} />
+        <SummaryCard title="작동 중 단말기" value={summary?.runningDevices ?? 0} />
+        <SummaryCard title="오프라인 상태 단말기" value={summary?.offlineDevices ?? 0} />
+        <SummaryCard title="에러 상태 단말기" value={summary?.errorDevices ?? 0} />
+        <SummaryCard title="점검 중 단말기" value={summary?.maintenanceDevices ?? 0} />
+        <SummaryCard title="정지 단말기" value={summary?.stoppedDevices ?? 0} />
         <SummaryCard title="오늘 분류 수" value={summary?.todayClassificationLogs ?? 0} />
         <SummaryCard title="전체 분류 수" value={summary?.totalClassificationLogs ?? 0} />
         <SummaryCard title="전체 에러" value={summary?.totalErrorEvents ?? 0} />
@@ -154,6 +242,16 @@ const updateDeviceStatus = async (deviceId, status) => {
         <SummaryCard title="처리 완료 에러" value={summary?.resolvedErrorEvents ?? 0} />
         <SummaryCard title="CRITICAL 에러" value={summary?.criticalErrorEvents ?? 0} />
         <SummaryCard title="수거함 누적량" value={summary?.totalItemsInBins ?? 0} />
+        <SummaryCard title="동작 결과 전체" value={summary?.totalSortingResults ?? 0} />
+<SummaryCard title="동작 성공" value={summary?.completedSortingResults ?? 0} />
+<SummaryCard title="동작 실패" value={summary?.failedSortingResults ?? 0} />
+<SummaryCard
+  title="동작 성공률"
+  value={`${(summary?.sortingSuccessRate ?? 0).toFixed(1)}%`}
+/>
+<SummaryCard title="대기 명령" value={pendingCommandCount} />
+<SummaryCard title="완료 명령" value={completedCommandCount} />
+<SummaryCard title="실패 명령" value={failedCommandCount} />
       </section>
 
       <section className="content-grid">
@@ -171,7 +269,7 @@ const updateDeviceStatus = async (deviceId, status) => {
                   <th>Location</th>
                   <th>Status</th>
                   <th>Last Heartbeat</th>
-                  <th>Action</th>
+                  <th>Commands</th>
                 </tr>
               </thead>
               <tbody>
@@ -183,36 +281,132 @@ const updateDeviceStatus = async (deviceId, status) => {
                       <StatusBadge status={device.status} />
                     </td>
                     <td>{formatDateTime(device.lastHeartbeatAt)}</td>
-                    <td>
-    <div className="device-action-group">
-      <button
-        className="device-action-button"
-        onClick={() => updateDeviceStatus(device.deviceId, 'MAINTENANCE')}
-      >
-        점검
-      </button>
+                    
 
-      <button
-        className="device-action-button"
-        onClick={() => updateDeviceStatus(device.deviceId, 'ERROR')}
-      >
-        장애
-      </button>
+  <td>
+  <div className="command-buttons">
+    <button
+      className="command-button danger"
+      disabled={isCommandButtonDisabled(device, 'EMERGENCY_STOP')}
+      onClick={() =>
+        createDeviceCommand(
+          device.deviceId,
+          'EMERGENCY_STOP',
+          'Emergency stop from dashboard.'
+        )
+      }
+    >
+      긴급 정지
+    </button>
 
-      <button
-        className="device-action-button"
-        onClick={() => updateDeviceStatus(device.deviceId, 'RUNNING')}
-      >
-        복귀
-      </button>
-    </div>
-  </td>
+    <button
+      className="command-button"
+      disabled={isCommandButtonDisabled(device, 'RESUME_OPERATION')}
+      onClick={() =>
+        createDeviceCommand(
+          device.deviceId,
+          'RESUME_OPERATION',
+          'Resume operation from dashboard.'
+        )
+      }
+    >
+      운영 재개
+    </button>
+
+    <button
+      className="command-button secondary"
+      disabled={isCommandButtonDisabled(device, 'ENTER_MAINTENANCE')}
+      onClick={() =>
+        createDeviceCommand(
+          device.deviceId,
+          'ENTER_MAINTENANCE',
+          'Enter maintenance mode from dashboard.'
+        )
+      }
+    >
+      점검
+    </button>
+
+    <button
+      className="command-button secondary"
+      disabled={isCommandButtonDisabled(device, 'EXIT_MAINTENANCE')}
+      onClick={() =>
+        createDeviceCommand(
+          device.deviceId,
+          'EXIT_MAINTENANCE',
+          'Exit maintenance mode from dashboard.'
+        )
+      }
+    >
+      점검 해제
+    </button>
+
+    <button
+      className="command-button"
+      disabled={isCommandButtonDisabled(device, 'RESTART_DEVICE')}
+      onClick={() =>
+        createDeviceCommand(
+          device.deviceId,
+          'RESTART_DEVICE',
+          'Restart device from dashboard.'
+        )
+      }
+    >
+      재시작
+    </button>
+  </div>
+
+      {hasPendingCommand(device.deviceId) && (
+  <div className="pending-command-label">
+    명령 대기중
+  </div>
+)}
+
+</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </section>
+
+        <section className="panel">
+  <div className="panel-header">
+    <h2>최근 단말기 명령</h2>
+    <span>{deviceCommands.length} commands</span>
+  </div>
+
+  <div className="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Device ID</th>
+          <th>Command Type</th>
+          <th>Status</th>
+          <th>Payload</th>
+          <th>Result Message</th>
+          <th>Created At</th>
+          <th>Completed At</th>
+        </tr>
+      </thead>
+      <tbody>
+        {deviceCommands.slice(0, 10).map((command) => (
+          <tr key={command.id}>
+            <td>{command.deviceId}</td>
+            <td>{command.commandType}</td>
+            <td>
+              <StatusBadge status={command.status} />
+            </td>
+            <td>{command.payload ?? '-'}</td>
+            <td>{command.resultMessage ?? '-'}</td>
+            <td>{formatDateTime(command.createdAt)}</td>
+            <td>{formatDateTime(command.completedAt)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</section>
 
         <section className="panel">
           <div className="panel-header">
@@ -275,6 +469,46 @@ const updateDeviceStatus = async (deviceId, status) => {
           })}
         </div>
       </section>
+
+      <section className="panel">
+  <div className="panel-header">
+    <h2>최근 분류 동작 결과</h2>
+    <span>{sortingResults.length} results</span>
+  </div>
+
+  <div className="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Device ID</th>
+          <th>Label</th>
+          <th>Target Bin</th>
+          <th>Action</th>
+          <th>Status</th>
+          <th>Actuator Time</th>
+          <th>Failure Reason</th>
+          <th>Created At</th>
+        </tr>
+      </thead>
+      <tbody>
+        {sortingResults.slice(0, 10).map((result) => (
+          <tr key={result.id}>
+            <td>{result.deviceId}</td>
+            <td>{result.label}</td>
+            <td>{result.targetBin}</td>
+            <td>{result.action}</td>
+            <td>
+              <StatusBadge status={result.status} />
+            </td>
+            <td>{result.actuatorTimeMs ?? '-'} ms</td>
+            <td>{result.failureReason ?? '-'}</td>
+            <td>{formatDateTime(result.createdAt)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</section>
 
       <section className="panel">
         <div className="panel-header">

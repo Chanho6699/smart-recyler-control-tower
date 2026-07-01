@@ -4,5 +4,6 @@ public enum DeviceStatus {
     RUNNING,
     OFFLINE,
     ERROR,
-    MAINTENANCE
+    MAINTENANCE,
+    STOPPED
 }
