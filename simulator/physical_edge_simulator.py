@@ -1,76 +1,17 @@
 import argparse
-import random
 import time
 from datetime import datetime
 
 import requests
 
-
-SAMPLES = [
-    {
-        "label": "plastic_bottle",
-        "targetBin": "PLASTIC",
-        "action": "MOVE_TO_PLASTIC_BIN",
-    },
-    {
-        "label": "plastic_cup",
-        "targetBin": "PLASTIC",
-        "action": "MOVE_TO_PLASTIC_BIN",
-    },
-    {
-        "label": "paper_cup",
-        "targetBin": "PAPER",
-        "action": "MOVE_TO_PAPER_BIN",
-    },
-    {
-        "label": "can",
-        "targetBin": "CAN",
-        "action": "MOVE_TO_CAN_BIN",
-    },
-    {
-        "label": "unknown",
-        "targetBin": "UNKNOWN",
-        "action": "MOVE_TO_UNKNOWN_BIN",
-    },
-]
+from edge.client.control_tower_client import ControlTowerClient
+from edge.ai.fake_classifier import FakeClassifier
+from edge.actuator.virtual_actuator import VirtualActuator
 
 
-def post(server_url, path, payload):
-    response = requests.post(
-        f"{server_url}{path}",
-        json=payload,
-        timeout=5,
-    )
-    response.raise_for_status()
-    return response.json()
-
-
-def patch(server_url, path, payload):
-    response = requests.patch(
-        f"{server_url}{path}",
-        json=payload,
-        timeout=5,
-    )
-    response.raise_for_status()
-    return response.json()
-
-
-def get(server_url, path):
-    response = requests.get(
-        f"{server_url}{path}",
-        timeout=5,
-    )
-
-    if response.status_code == 204:
-        return None
-
-    response.raise_for_status()
-    return response.json()
-
-
-def register_device(server_url, device_id, location):
+def register_device(client, device_id, location):
     try:
-        post(server_url, "/api/devices/register", {
+        client.register_device({
             "deviceId": device_id,
             "location": location,
         })
@@ -81,9 +22,9 @@ def register_device(server_url, device_id, location):
         print(f"[REGISTER ERROR] {device_id} {e}")
 
 
-def send_heartbeat(server_url, device_id):
+def send_heartbeat(client, device_id):
     try:
-        post(server_url, "/api/devices/heartbeat", {
+        client.send_heartbeat({
             "deviceId": device_id,
         })
 
@@ -91,17 +32,9 @@ def send_heartbeat(server_url, device_id):
         print(f"[HEARTBEAT ERROR] {device_id} {e}")
 
 
-def get_pending_command(server_url, device_id):
-    return get(
-        server_url,
-        f"/api/device-commands/devices/{device_id}/pending",
-    )
-
-
-def report_command_result(server_url, command_id, status, result_message):
-    return patch(
-        server_url,
-        f"/api/device-commands/{command_id}/result",
+def report_command_result(client, command_id, status, result_message):
+    return client.report_command_result(
+        command_id,
         {
             "status": status,
             "resultMessage": result_message,
@@ -149,9 +82,9 @@ def execute_command(command, device_state):
     return "FAILED", f"Unknown command type: {command_type}"
 
 
-def process_pending_command(server_url, device_id, device_state):
+def process_pending_command(client, device_id, device_state):
     try:
-        command = get_pending_command(server_url, device_id)
+        command = client.get_pending_command(device_id)
 
         if command is None:
             return None
@@ -164,7 +97,7 @@ def process_pending_command(server_url, device_id, device_state):
         status, result_message = execute_command(command, device_state)
 
         report_command_result(
-            server_url,
+            client,
             command_id,
             status,
             result_message,
@@ -183,59 +116,40 @@ def process_pending_command(server_url, device_id, device_state):
         return "FAILED"
 
 
-def send_classification_log(server_url, device_id, sample, device_state):
-    confidence = round(random.uniform(0.70, 0.99), 2)
-    threshold = device_state["confidence_threshold"]
-
+def send_classification_log(client, device_id, classification):
     payload = {
         "deviceId": device_id,
-        "label": sample["label"],
-        "confidence": confidence,
-        "targetBin": sample["targetBin"],
-        "inferenceTimeMs": random.randint(20, 120),
-        "runtimeType": "FAKE_AI",
+        "label": classification["label"],
+        "confidence": classification["confidence"],
+        "targetBin": classification["targetBin"],
+        "inferenceTimeMs": classification["inferenceTimeMs"],
+        "runtimeType": classification["runtimeType"],
     }
 
-    return post(server_url, "/api/classification-logs", payload)
+    return client.send_classification_log(payload)
 
 
 def send_sorting_result(
-    server_url,
+    client,
     device_id,
     classification_log_id,
-    sample,
-    success_rate,
+    classification,
+    actuator_result,
 ):
-    actuator_time_ms = random.randint(150, 800)
-    time.sleep(actuator_time_ms / 1000)
-
-    is_success = random.random() < success_rate
-
-    if is_success:
-        status = "COMPLETED"
-        failure_reason = None
-    else:
-        status = "FAILED"
-        failure_reason = random.choice([
-            "Virtual actuator jam detected.",
-            "Servo timeout while moving item.",
-            "Item slipped during sorting motion.",
-        ])
-
     payload = {
         "classificationLogId": classification_log_id,
         "deviceId": device_id,
-        "label": sample["label"],
-        "targetBin": sample["targetBin"],
-        "action": sample["action"],
-        "status": status,
-        "actuatorTimeMs": actuator_time_ms,
-        "failureReason": failure_reason,
+        "label": classification["label"],
+        "targetBin": classification["targetBin"],
+        "action": classification["action"],
+        "status": actuator_result["status"],
+        "actuatorTimeMs": actuator_result["actuatorTimeMs"],
+        "failureReason": actuator_result["failureReason"],
     }
 
-    post(server_url, "/api/sorting-results", payload)
+    client.send_sorting_result(payload)
 
-    return status, failure_reason
+    return actuator_result["status"], actuator_result["failureReason"]
 
 
 def main():
@@ -247,6 +161,10 @@ def main():
     parser.add_argument("--success-rate", type=float, default=0.85)
 
     args = parser.parse_args()
+
+    client = ControlTowerClient(args.server)
+    classifier = FakeClassifier()
+    actuator = VirtualActuator(success_rate=args.success_rate)
 
     device_ids = [
         f"EDGE-PHYSICAL-{i:03d}"
@@ -275,7 +193,7 @@ def main():
 
     for index, device_id in enumerate(device_ids, start=1):
         register_device(
-            args.server,
+            client,
             device_id,
             f"Physical AI Zone {index}",
         )
@@ -293,10 +211,10 @@ def main():
         for device_id in device_ids:
             device_state = device_states[device_id]
 
-            send_heartbeat(args.server, device_id)
+            send_heartbeat(client, device_id)
 
             command_result = process_pending_command(
-                args.server,
+                client,
                 device_id,
                 device_state,
             )
@@ -314,38 +232,39 @@ def main():
                 print(f"[SKIP] {device_id} is in maintenance mode.")
                 continue
 
-            sample = random.choice(SAMPLES)
+            classification = classifier.classify()
 
             try:
                 classification_response = send_classification_log(
-                    args.server,
+                    client,
                     device_id,
-                    sample,
-                    device_state,
+                    classification,
                 )
 
                 classification_log_id = classification_response["id"]
                 total_classification += 1
 
+                actuator_result = actuator.execute(classification["action"])
+
                 status, failure_reason = send_sorting_result(
-                    args.server,
+                    client,
                     device_id,
                     classification_log_id,
-                    sample,
-                    args.success_rate,
+                    classification,
+                    actuator_result,
                 )
 
                 if status == "COMPLETED":
                     total_completed += 1
                     print(
                         f"[SORT OK] {device_id} "
-                        f"{sample['label']} -> {sample['targetBin']}"
+                        f"{classification['label']} -> {classification['targetBin']}"
                     )
                 else:
                     total_failed += 1
                     print(
                         f"[SORT FAIL] {device_id} "
-                        f"{sample['label']} reason={failure_reason}"
+                        f"{classification['label']} reason={failure_reason}"
                     )
 
             except requests.RequestException as e:
