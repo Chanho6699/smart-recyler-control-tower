@@ -6,6 +6,7 @@ import requests
 
 from edge.client.control_tower_client import ControlTowerClient
 from edge.ai.fake_classifier import FakeClassifier
+from edge.ai.yolo_classifier import YoloClassifier
 from edge.actuator.virtual_actuator import VirtualActuator
 
 
@@ -151,6 +152,14 @@ def send_sorting_result(
 
     return actuator_result["status"], actuator_result["failureReason"]
 
+def create_classifier(ai_runtime):
+    if ai_runtime == "fake":
+        return FakeClassifier()
+
+    if ai_runtime == "yolo":
+        return YoloClassifier()
+
+    raise ValueError(f"Unsupported ai runtime: {ai_runtime}")
 
 def main():
     parser = argparse.ArgumentParser()
@@ -159,12 +168,19 @@ def main():
     parser.add_argument("--duration", type=int, default=120)
     parser.add_argument("--interval", type=float, default=2.0)
     parser.add_argument("--success-rate", type=float, default=0.85)
+    parser.add_argument(
+    "--ai-runtime",
+    choices=["fake", "yolo"],
+    default="fake",
+    help="AI runtime to use: fake or yolo"
+    )
 
     args = parser.parse_args()
 
     client = ControlTowerClient(args.server)
-    classifier = FakeClassifier()
+    classifier = create_classifier(args.ai_runtime)
     actuator = VirtualActuator(success_rate=args.success_rate)
+
 
     device_ids = [
         f"EDGE-PHYSICAL-{i:03d}"
