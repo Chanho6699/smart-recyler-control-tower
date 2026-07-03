@@ -15,6 +15,9 @@ function App() {
   const [sortingResults, setSortingResults] = useState([]);
   const [deviceCommands, setDeviceCommands] = useState([]);
   const [commandSubmitting, setCommandSubmitting] = useState(false);
+  const [sortingDeviceFilter, setSortingDeviceFilter] = useState('ALL');
+  const [sortingStatusFilter, setSortingStatusFilter] = useState('ALL');
+  const [sortingLimitFilter, setSortingLimitFilter] = useState(30);
 
   const fetchDashboardData = async () => {
     try {
@@ -212,6 +215,21 @@ const isCommandButtonDisabled = (device, commandType) => {
 
   return false;
 };
+
+  const sortingResultDeviceIds = Array.from(
+    new Set(sortingResults.map((result) => result.deviceId))
+  );
+
+  const filteredSortingResults = sortingResults
+    .filter(
+      (result) =>
+        sortingStatusFilter === 'ALL' || result.status === sortingStatusFilter
+    )
+    .filter(
+      (result) =>
+        sortingDeviceFilter === 'ALL' || result.deviceId === sortingDeviceFilter
+    )
+    .slice(0, sortingLimitFilter);
 
   return (
     <main className="page">
@@ -476,6 +494,47 @@ const isCommandButtonDisabled = (device, commandType) => {
     <span>{sortingResults.length} results</span>
   </div>
 
+  <div className="sorting-filter-bar">
+    <label>
+      Device ID
+      <select
+        value={sortingDeviceFilter}
+        onChange={(e) => setSortingDeviceFilter(e.target.value)}
+      >
+        <option value="ALL">ALL</option>
+        {sortingResultDeviceIds.map((deviceId) => (
+          <option key={deviceId} value={deviceId}>
+            {deviceId}
+          </option>
+        ))}
+      </select>
+    </label>
+
+    <label>
+      Status
+      <select
+        value={sortingStatusFilter}
+        onChange={(e) => setSortingStatusFilter(e.target.value)}
+      >
+        <option value="ALL">ALL</option>
+        <option value="COMPLETED">COMPLETED</option>
+        <option value="FAILED">FAILED</option>
+      </select>
+    </label>
+
+    <label>
+      Limit
+      <select
+        value={sortingLimitFilter}
+        onChange={(e) => setSortingLimitFilter(Number(e.target.value))}
+      >
+        <option value={10}>10</option>
+        <option value={30}>30</option>
+        <option value={50}>50</option>
+      </select>
+    </label>
+  </div>
+
   <div className="table-wrapper">
     <table>
       <thead>
@@ -491,7 +550,7 @@ const isCommandButtonDisabled = (device, commandType) => {
         </tr>
       </thead>
       <tbody>
-        {sortingResults.slice(0, 10).map((result) => (
+        {filteredSortingResults.map((result) => (
           <tr key={result.id}>
             <td>{result.deviceId}</td>
             <td>{result.label}</td>
