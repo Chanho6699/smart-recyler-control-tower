@@ -428,3 +428,77 @@ th {
   color: #e5e7eb;
   font-size: 13px;
 }
+
+.activity-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  flex-wrap: wrap;
+}
+
+.activity-type {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #334155;
+  color: #e5e7eb;
+  white-space: nowrap;
+}
+
+.activity-type-classification {
+  background: #1e3a8a;
+  color: #bfdbfe;
+}
+
+.activity-type-sorting {
+  background: #14532d;
+  color: #bbf7d0;
+}
+
+.activity-type-error {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+.activity-type-command {
+  background: #713f12;
+  color: #fef3c7;
+}
+
+.activity-device {
+  color: #94a3b8;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.activity-message {
+  flex: 1;
+  min-width: 200px;
+  font-size: 14px;
+  color: #e5e7eb;
+}
+
+.activity-time {
+  color: #94a3b8;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.activity-empty {
+  color: #94a3b8;
+  font-size: 14px;
+}

@@ -9,6 +9,7 @@ function App() {
   const [devices, setDevices] = useState([]);
   const [bins, setBins] = useState([]);
   const [errorEvents, setErrorEvents] = useState([]);
+  const [classificationLogs, setClassificationLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
@@ -35,6 +36,7 @@ function App() {
   errorEventsResponse,
   sortingResultsResponse,
   deviceCommandsResponse,
+  classificationLogsResponse,
 ] = await Promise.all([
   axios.get(`${API_BASE_URL}/api/statistics/summary`),
   axios.get(`${API_BASE_URL}/api/devices`),
@@ -42,6 +44,7 @@ function App() {
   axios.get(`${API_BASE_URL}/api/error-events`),
   axios.get(`${API_BASE_URL}/api/sorting-results`),
   axios.get(`${API_BASE_URL}/api/device-commands`),
+  axios.get(`${API_BASE_URL}/api/classification-logs`),
 ]);
 
 setSummary(summaryResponse.data);
@@ -50,6 +53,7 @@ setBins(binsResponse.data);
 setErrorEvents(errorEventsResponse.data);
 setSortingResults(sortingResultsResponse.data);
 setDeviceCommands(deviceCommandsResponse.data);
+setClassificationLogs(classificationLogsResponse.data);
 
     } catch (error) {
       console.error(error);
@@ -268,6 +272,38 @@ const isCommandButtonDisabled = (device, commandType) => {
     )
     .slice(0, commandLimitFilter);
 
+  const recentActivity = [
+    ...classificationLogs.map((log) => ({
+      type: 'CLASSIFICATION',
+      deviceId: log.deviceId,
+      message: `classified ${log.label} → ${log.targetBin}`,
+      createdAt: log.createdAt,
+    })),
+    ...sortingResults.map((result) => ({
+      type: 'SORTING',
+      deviceId: result.deviceId,
+      message:
+        result.status === 'COMPLETED'
+          ? `sorting completed → ${result.targetBin}`
+          : `sorting failed: ${result.failureReason}`,
+      createdAt: result.createdAt,
+    })),
+    ...errorEvents.map((event) => ({
+      type: 'ERROR',
+      deviceId: event.deviceId,
+      message: `${event.errorType}: ${event.message}`,
+      createdAt: event.createdAt,
+    })),
+    ...deviceCommands.map((command) => ({
+      type: 'COMMAND',
+      deviceId: command.deviceId,
+      message: `command ${command.commandType} ${command.status}`,
+      createdAt: command.createdAt,
+    })),
+  ]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 20);
+
   return (
     <main className="page">
       <header className="dashboard-header">
@@ -307,6 +343,34 @@ const isCommandButtonDisabled = (device, commandType) => {
 <SummaryCard title="대기 명령" value={pendingCommandCount} />
 <SummaryCard title="완료 명령" value={completedCommandCount} />
 <SummaryCard title="실패 명령" value={failedCommandCount} />
+      </section>
+
+      <section className="panel">
+        <div className="panel-header">
+          <h2>Recent Activity</h2>
+          <span>{recentActivity.length} items</span>
+        </div>
+
+        {recentActivity.length === 0 ? (
+          <p className="activity-empty">No recent activity</p>
+        ) : (
+          <div className="activity-feed">
+            {recentActivity.map((activity, index) => (
+              <div className="activity-item" key={`${activity.type}-${index}`}>
+                <span
+                  className={`activity-type activity-type-${activity.type.toLowerCase()}`}
+                >
+                  {activity.type}
+                </span>
+                <span className="activity-device">{activity.deviceId}</span>
+                <span className="activity-message">{activity.message}</span>
+                <span className="activity-time">
+                  {formatDateTime(activity.createdAt)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="content-grid">
