@@ -26,6 +26,7 @@ function App() {
   const [commandTypeFilter, setCommandTypeFilter] = useState('ALL');
   const [commandStatusFilter, setCommandStatusFilter] = useState('ALL');
   const [commandLimitFilter, setCommandLimitFilter] = useState(30);
+  const [globalDeviceFilter, setGlobalDeviceFilter] = useState('ALL');
 
   const fetchDashboardData = async () => {
     try {
@@ -242,11 +243,19 @@ const getCommandDisabledReason = (device, commandType) => {
   return `Not available while device is ${device.status}`;
 };
 
+  const globalDeviceIds = Array.from(
+    new Set(devices.map((device) => device.deviceId))
+  );
+
   const sortingResultDeviceIds = Array.from(
     new Set(sortingResults.map((result) => result.deviceId))
   );
 
   const filteredSortingResults = sortingResults
+    .filter(
+      (result) =>
+        globalDeviceFilter === 'ALL' || result.deviceId === globalDeviceFilter
+    )
     .filter(
       (result) =>
         sortingStatusFilter === 'ALL' || result.status === sortingStatusFilter
@@ -258,6 +267,10 @@ const getCommandDisabledReason = (device, commandType) => {
     .slice(0, sortingLimitFilter);
 
   const filteredErrorEvents = errorEvents
+    .filter(
+      (event) =>
+        globalDeviceFilter === 'ALL' || event.deviceId === globalDeviceFilter
+    )
     .filter((event) => {
       const eventStatus = event.eventStatus ?? 'OPEN';
       return errorEventStatusFilter === 'ALL' || eventStatus === errorEventStatusFilter;
@@ -273,6 +286,10 @@ const getCommandDisabledReason = (device, commandType) => {
   );
 
   const filteredDeviceCommands = deviceCommands
+    .filter(
+      (command) =>
+        globalDeviceFilter === 'ALL' || command.deviceId === globalDeviceFilter
+    )
     .filter(
       (command) =>
         commandDeviceFilter === 'ALL' || command.deviceId === commandDeviceFilter
@@ -316,6 +333,10 @@ const getCommandDisabledReason = (device, commandType) => {
       createdAt: command.createdAt,
     })),
   ]
+    .filter(
+      (activity) =>
+        globalDeviceFilter === 'ALL' || activity.deviceId === globalDeviceFilter
+    )
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 20);
 
@@ -325,8 +346,12 @@ const getCommandDisabledReason = (device, commandType) => {
     return index === -1 ? order.length : index;
   };
 
+  const globallyFilteredBins = bins.filter(
+    (bin) => globalDeviceFilter === 'ALL' || bin.deviceId === globalDeviceFilter
+  );
+
   const groupedBins = Object.values(
-    bins.reduce((groups, bin) => {
+    globallyFilteredBins.reduce((groups, bin) => {
       if (!groups[bin.deviceId]) {
         groups[bin.deviceId] = { deviceId: bin.deviceId, bins: [] };
       }
@@ -351,9 +376,26 @@ const getCommandDisabledReason = (device, commandType) => {
           <p>가상 단말기 기반 재활용 분류 관제 대시보드</p>
         </div>
 
-        <button className="refresh-button" onClick={fetchDashboardData}>
-          새로고침
-        </button>
+        <div className="header-actions">
+          <label className="global-device-filter">
+            Device Focus
+            <select
+              value={globalDeviceFilter}
+              onChange={(e) => setGlobalDeviceFilter(e.target.value)}
+            >
+              <option value="ALL">ALL</option>
+              {globalDeviceIds.map((deviceId) => (
+                <option key={deviceId} value={deviceId}>
+                  {deviceId}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button className="refresh-button" onClick={fetchDashboardData}>
+            새로고침
+          </button>
+        </div>
       </header>
 
       {errorMessage && <div className="error-banner">{errorMessage}</div>}
@@ -432,7 +474,14 @@ const getCommandDisabledReason = (device, commandType) => {
               </thead>
               <tbody>
                 {devices.map((device) => (
-                  <tr key={device.id}>
+                  <tr
+                    key={device.id}
+                    className={
+                      globalDeviceFilter === device.deviceId
+                        ? 'device-row-focused'
+                        : undefined
+                    }
+                  >
                     <td>{device.deviceId}</td>
                     <td>{device.location}</td>
                     <td>

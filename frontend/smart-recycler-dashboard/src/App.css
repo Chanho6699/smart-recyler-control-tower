@@ -31,6 +31,29 @@ body {
   color: #94a3b8;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.global-device-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.global-device-filter select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #e5e7eb;
+  font-size: 13px;
+}
+
 .refresh-button {
   border: none;
   padding: 12px 18px;
@@ -43,6 +66,10 @@ body {
 
 .refresh-button:hover {
   background: #1d4ed8;
+}
+
+.device-row-focused {
+  background: rgba(37, 99, 235, 0.18);
 }
 
 .error-banner {
