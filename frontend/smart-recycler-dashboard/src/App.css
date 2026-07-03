@@ -142,13 +142,11 @@ th {
 }
 
 .status-running,
-.status-normal,
-.status-info {
+.status-normal {
   background: #14532d;
   color: #bbf7d0;
 }
 
-.status-offline,
 .status-warning {
   background: #78350f;
   color: #fde68a;
@@ -162,8 +160,8 @@ th {
 }
 
 .status-maintenance {
-  background: #1e3a8a;
-  color: #bfdbfe;
+  background: #78350f;
+  color: #fde68a;
 }
 
 .bin-summary-list {
