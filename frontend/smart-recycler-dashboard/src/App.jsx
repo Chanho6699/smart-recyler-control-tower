@@ -21,6 +21,10 @@ function App() {
   const [errorEventStatusFilter, setErrorEventStatusFilter] = useState('ALL');
   const [errorSeverityFilter, setErrorSeverityFilter] = useState('ALL');
   const [errorLimitFilter, setErrorLimitFilter] = useState(30);
+  const [commandDeviceFilter, setCommandDeviceFilter] = useState('ALL');
+  const [commandTypeFilter, setCommandTypeFilter] = useState('ALL');
+  const [commandStatusFilter, setCommandStatusFilter] = useState('ALL');
+  const [commandLimitFilter, setCommandLimitFilter] = useState(30);
 
   const fetchDashboardData = async () => {
     try {
@@ -245,6 +249,25 @@ const isCommandButtonDisabled = (device, commandType) => {
     )
     .slice(0, errorLimitFilter);
 
+  const commandDeviceIds = Array.from(
+    new Set(deviceCommands.map((command) => command.deviceId))
+  );
+
+  const filteredDeviceCommands = deviceCommands
+    .filter(
+      (command) =>
+        commandDeviceFilter === 'ALL' || command.deviceId === commandDeviceFilter
+    )
+    .filter(
+      (command) =>
+        commandTypeFilter === 'ALL' || command.commandType === commandTypeFilter
+    )
+    .filter(
+      (command) =>
+        commandStatusFilter === 'ALL' || command.status === commandStatusFilter
+    )
+    .slice(0, commandLimitFilter);
+
   return (
     <main className="page">
       <header className="dashboard-header">
@@ -408,6 +431,65 @@ const isCommandButtonDisabled = (device, commandType) => {
     <span>{deviceCommands.length} commands</span>
   </div>
 
+  <div className="sorting-filter-bar">
+    <label>
+      Device ID
+      <select
+        value={commandDeviceFilter}
+        onChange={(e) => setCommandDeviceFilter(e.target.value)}
+      >
+        <option value="ALL">ALL</option>
+        {commandDeviceIds.map((deviceId) => (
+          <option key={deviceId} value={deviceId}>
+            {deviceId}
+          </option>
+        ))}
+      </select>
+    </label>
+
+    <label>
+      Command Type
+      <select
+        value={commandTypeFilter}
+        onChange={(e) => setCommandTypeFilter(e.target.value)}
+      >
+        <option value="ALL">ALL</option>
+        <option value="EMERGENCY_STOP">EMERGENCY_STOP</option>
+        <option value="RESUME_OPERATION">RESUME_OPERATION</option>
+        <option value="ENTER_MAINTENANCE">ENTER_MAINTENANCE</option>
+        <option value="EXIT_MAINTENANCE">EXIT_MAINTENANCE</option>
+        <option value="RESTART_DEVICE">RESTART_DEVICE</option>
+        <option value="RESET_BIN">RESET_BIN</option>
+        <option value="UPDATE_THRESHOLD">UPDATE_THRESHOLD</option>
+      </select>
+    </label>
+
+    <label>
+      Status
+      <select
+        value={commandStatusFilter}
+        onChange={(e) => setCommandStatusFilter(e.target.value)}
+      >
+        <option value="ALL">ALL</option>
+        <option value="PENDING">PENDING</option>
+        <option value="COMPLETED">COMPLETED</option>
+        <option value="FAILED">FAILED</option>
+      </select>
+    </label>
+
+    <label>
+      Limit
+      <select
+        value={commandLimitFilter}
+        onChange={(e) => setCommandLimitFilter(Number(e.target.value))}
+      >
+        <option value={10}>10</option>
+        <option value={30}>30</option>
+        <option value={50}>50</option>
+      </select>
+    </label>
+  </div>
+
   <div className="table-wrapper">
     <table>
       <thead>
@@ -422,7 +504,7 @@ const isCommandButtonDisabled = (device, commandType) => {
         </tr>
       </thead>
       <tbody>
-        {deviceCommands.slice(0, 10).map((command) => (
+        {filteredDeviceCommands.map((command) => (
           <tr key={command.id}>
             <td>{command.deviceId}</td>
             <td>{command.commandType}</td>
