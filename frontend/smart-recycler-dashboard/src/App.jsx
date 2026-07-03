@@ -1028,6 +1028,53 @@ const getCommandDisabledReason = (device, commandType) => {
         </div>
       </section>
 
+      <section className="panel">
+        <details className="demo-guide">
+          <summary className="demo-guide-summary">Demo Guide</summary>
+
+          <div className="demo-guide-content">
+            <div className="demo-guide-item">
+              <h4>Backend 실행</h4>
+              <pre>
+                <code>{`cd backend/smart-recycler-server\n./gradlew bootRun`}</code>
+              </pre>
+            </div>
+
+            <div className="demo-guide-item">
+              <h4>Frontend 실행</h4>
+              <pre>
+                <code>{`cd frontend/smart-recycler-dashboard\nnpm run dev`}</code>
+              </pre>
+            </div>
+
+            <div className="demo-guide-item">
+              <h4>Simulator 기본 실행</h4>
+              <pre>
+                <code>{`cd simulator\nsource .venv/bin/activate\npython physical_edge_simulator.py --ai-runtime fake --devices 3 --duration 120 --interval 2 --success-rate 0.85`}</code>
+              </pre>
+            </div>
+
+            <div className="demo-guide-item">
+              <h4>FAILED 이벤트 테스트</h4>
+              <pre>
+                <code>{`python physical_edge_simulator.py --ai-runtime fake --devices 1 --duration 30 --interval 2 --success-rate 0.2`}</code>
+              </pre>
+            </div>
+
+            <div className="demo-guide-item">
+              <h4>Command 테스트 순서</h4>
+              <ol className="demo-guide-steps">
+                <li>EMERGENCY_STOP</li>
+                <li>RESUME_OPERATION</li>
+                <li>ENTER_MAINTENANCE</li>
+                <li>EXIT_MAINTENANCE</li>
+                <li>RESTART_DEVICE</li>
+              </ol>
+            </div>
+          </div>
+        </details>
+      </section>
+
       <footer className="footer">
         마지막 갱신: {lastUpdatedAt ? lastUpdatedAt.toLocaleTimeString() : '-'}
       </footer>
