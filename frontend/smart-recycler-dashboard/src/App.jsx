@@ -194,6 +194,20 @@ const failedCommandCount = deviceCommands.filter(
   (command) => command.status === 'FAILED'
 ).length;
 
+const fleetHealthSummary = {
+  totalDevices: devices.length,
+  runningCount: devices.filter((device) => device.status === 'RUNNING').length,
+  stoppedCount: devices.filter((device) => device.status === 'STOPPED').length,
+  maintenanceCount: devices.filter((device) => device.status === 'MAINTENANCE').length,
+  offlineCount: devices.filter((device) => device.status === 'OFFLINE').length,
+  openErrorCount: errorEvents.filter(
+    (event) => (event.eventStatus ?? 'OPEN') === 'OPEN'
+  ).length,
+  pendingCommandCount,
+  failedSortingCount: sortingResults.filter((result) => result.status === 'FAILED')
+    .length,
+};
+
   const hasPendingCommand = (deviceId) => {
   return deviceCommands.some(
     (command) =>
@@ -467,6 +481,39 @@ const getCommandDisabledReason = (device, commandType) => {
 <SummaryCard title="대기 명령" value={pendingCommandCount} />
 <SummaryCard title="완료 명령" value={completedCommandCount} />
 <SummaryCard title="실패 명령" value={failedCommandCount} />
+      </section>
+
+      <section className="panel">
+        <div className="panel-header">
+          <h2>Fleet Health Summary</h2>
+        </div>
+
+        <div className="summary-grid">
+          <SummaryCard title="전체 단말기" value={fleetHealthSummary.totalDevices} />
+          <SummaryCard title="RUNNING" value={fleetHealthSummary.runningCount} />
+          <SummaryCard title="STOPPED" value={fleetHealthSummary.stoppedCount} />
+          <SummaryCard title="MAINTENANCE" value={fleetHealthSummary.maintenanceCount} />
+          <SummaryCard
+            title="OFFLINE"
+            value={fleetHealthSummary.offlineCount}
+            danger={fleetHealthSummary.offlineCount > 0}
+          />
+          <SummaryCard
+            title="Open Error Events"
+            value={fleetHealthSummary.openErrorCount}
+            danger={fleetHealthSummary.openErrorCount > 0}
+          />
+          <SummaryCard
+            title="Pending Commands"
+            value={fleetHealthSummary.pendingCommandCount}
+            danger={fleetHealthSummary.pendingCommandCount > 0}
+          />
+          <SummaryCard
+            title="Failed Sorting (recent)"
+            value={fleetHealthSummary.failedSortingCount}
+            danger={fleetHealthSummary.failedSortingCount > 0}
+          />
+        </div>
       </section>
 
       <section className="panel">
@@ -1082,9 +1129,9 @@ const getCommandDisabledReason = (device, commandType) => {
   );
 }
 
-function SummaryCard({ title, value }) {
+function SummaryCard({ title, value, danger }) {
   return (
-    <article className="summary-card">
+    <article className={`summary-card${danger ? ' summary-card-danger' : ''}`}>
       <p>{title}</p>
       <strong>{value}</strong>
     </article>

@@ -104,6 +104,15 @@ body {
   font-size: 32px;
 }
 
+.summary-card-danger {
+  background: #2a1010;
+  border-color: #7f1d1d;
+}
+
+.summary-card-danger strong {
+  color: #fecaca;
+}
+
 .content-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
