@@ -27,6 +27,7 @@ function App() {
   const [commandStatusFilter, setCommandStatusFilter] = useState('ALL');
   const [commandLimitFilter, setCommandLimitFilter] = useState(30);
   const [globalDeviceFilter, setGlobalDeviceFilter] = useState('ALL');
+  const [connectionStatus, setConnectionStatus] = useState('CONNECTED');
 
   const fetchDashboardData = async () => {
     try {
@@ -56,8 +57,13 @@ setSortingResults(sortingResultsResponse.data);
 setDeviceCommands(deviceCommandsResponse.data);
 setClassificationLogs(classificationLogsResponse.data);
 
+setConnectionStatus('CONNECTED');
+setLastUpdatedAt(new Date());
+setErrorMessage('');
+
     } catch (error) {
       console.error(error);
+      setConnectionStatus('DISCONNECTED');
       setErrorMessage('서버 데이터를 불러오지 못했습니다.');
     } finally {
       setLoading(false);
@@ -153,6 +159,12 @@ const updateDeviceStatus = async (deviceId, status) => {
   const formatDateTime = (value) => {
     if (!value) return '-';
     return new Date(value).toLocaleString();
+  };
+
+  const formatClockTime = (value) => {
+    if (!value) return '-';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(value.getHours())}:${pad(value.getMinutes())}:${pad(value.getSeconds())}`;
   };
 
   const getBinUsagePercentage = (bin) => {
@@ -473,6 +485,18 @@ const getCommandDisabledReason = (device, commandType) => {
         </div>
 
         <div className="header-actions">
+          <div
+            className={`connection-status connection-status-${connectionStatus.toLowerCase()}`}
+          >
+            <span className="connection-status-dot" />
+            <span className="connection-status-label">
+              {connectionStatus === 'CONNECTED' ? 'Connected' : 'Disconnected'}
+            </span>
+            <span className="connection-status-time">
+              Last updated {formatClockTime(lastUpdatedAt)}
+            </span>
+          </div>
+
           <label className="global-device-filter">
             Device Focus
             <select

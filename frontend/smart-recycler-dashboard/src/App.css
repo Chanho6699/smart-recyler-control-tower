@@ -37,6 +37,47 @@ body {
   gap: 14px;
 }
 
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.connection-status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #4b5563;
+}
+
+.connection-status-label {
+  font-weight: 700;
+  color: #e5e7eb;
+}
+
+.connection-status-connected .connection-status-dot {
+  background: #22c55e;
+}
+
+.connection-status-disconnected .connection-status-dot {
+  background: #ef4444;
+}
+
+.connection-status-disconnected {
+  border-color: #7f1d1d;
+}
+
+.connection-status-disconnected .connection-status-label {
+  color: #fecaca;
+}
+
 .global-device-filter {
   display: flex;
   flex-direction: column;
