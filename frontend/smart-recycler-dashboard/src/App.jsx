@@ -18,6 +18,9 @@ function App() {
   const [sortingDeviceFilter, setSortingDeviceFilter] = useState('ALL');
   const [sortingStatusFilter, setSortingStatusFilter] = useState('ALL');
   const [sortingLimitFilter, setSortingLimitFilter] = useState(30);
+  const [errorEventStatusFilter, setErrorEventStatusFilter] = useState('ALL');
+  const [errorSeverityFilter, setErrorSeverityFilter] = useState('ALL');
+  const [errorLimitFilter, setErrorLimitFilter] = useState(30);
 
   const fetchDashboardData = async () => {
     try {
@@ -230,6 +233,17 @@ const isCommandButtonDisabled = (device, commandType) => {
         sortingDeviceFilter === 'ALL' || result.deviceId === sortingDeviceFilter
     )
     .slice(0, sortingLimitFilter);
+
+  const filteredErrorEvents = errorEvents
+    .filter((event) => {
+      const eventStatus = event.eventStatus ?? 'OPEN';
+      return errorEventStatusFilter === 'ALL' || eventStatus === errorEventStatusFilter;
+    })
+    .filter(
+      (event) =>
+        errorSeverityFilter === 'ALL' || event.severity === errorSeverityFilter
+    )
+    .slice(0, errorLimitFilter);
 
   return (
     <main className="page">
@@ -575,6 +589,45 @@ const isCommandButtonDisabled = (device, commandType) => {
           <span>{errorEvents.length} events</span>
         </div>
 
+        <div className="sorting-filter-bar">
+          <label>
+            Status
+            <select
+              value={errorEventStatusFilter}
+              onChange={(e) => setErrorEventStatusFilter(e.target.value)}
+            >
+              <option value="ALL">ALL</option>
+              <option value="OPEN">OPEN</option>
+              <option value="RESOLVED">RESOLVED</option>
+            </select>
+          </label>
+
+          <label>
+            Severity
+            <select
+              value={errorSeverityFilter}
+              onChange={(e) => setErrorSeverityFilter(e.target.value)}
+            >
+              <option value="ALL">ALL</option>
+              <option value="INFO">INFO</option>
+              <option value="WARNING">WARNING</option>
+              <option value="CRITICAL">CRITICAL</option>
+            </select>
+          </label>
+
+          <label>
+            Limit
+            <select
+              value={errorLimitFilter}
+              onChange={(e) => setErrorLimitFilter(Number(e.target.value))}
+            >
+              <option value={10}>10</option>
+              <option value={30}>30</option>
+              <option value={50}>50</option>
+            </select>
+          </label>
+        </div>
+
         <div className="table-wrapper">
           <table>
             <thead>
@@ -589,7 +642,7 @@ const isCommandButtonDisabled = (device, commandType) => {
               </tr>
             </thead>
             <tbody>
-              {errorEvents.slice(0, 10).map((event) => {
+              {filteredErrorEvents.map((event) => {
                 const eventStatus = event.eventStatus ?? 'OPEN';
 
                 return (
