@@ -166,6 +166,12 @@ const updateDeviceStatus = async (deviceId, status) => {
     return Math.round((bin.itemCount / bin.capacity) * 100);
   };
 
+  const getBinUsageLevel = (usage) => {
+    if (usage >= 90) return 'FULL';
+    if (usage >= 70) return 'WARNING';
+    return 'NORMAL';
+  };
+
   if (loading) {
     return (
       <main className="page">
@@ -303,6 +309,30 @@ const isCommandButtonDisabled = (device, commandType) => {
   ]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 20);
+
+  const getBinTypeOrder = (binType) => {
+    const order = ['PLASTIC', 'PAPER', 'CAN', 'UNKNOWN'];
+    const index = order.indexOf(binType);
+    return index === -1 ? order.length : index;
+  };
+
+  const groupedBins = Object.values(
+    bins.reduce((groups, bin) => {
+      if (!groups[bin.deviceId]) {
+        groups[bin.deviceId] = { deviceId: bin.deviceId, bins: [] };
+      }
+
+      groups[bin.deviceId].bins.push(bin);
+      return groups;
+    }, {})
+  )
+    .map((group) => ({
+      ...group,
+      bins: [...group.bins].sort(
+        (a, b) => getBinTypeOrder(a.binType) - getBinTypeOrder(b.binType)
+      ),
+    }))
+    .sort((a, b) => a.deviceId.localeCompare(b.deviceId));
 
   return (
     <main className="page">
@@ -609,42 +639,49 @@ const isCommandButtonDisabled = (device, commandType) => {
           <span>{bins.length} bins</span>
         </div>
 
-        <div className="bin-grid">
-          {bins.map((bin) => {
-            const usage = getBinUsagePercentage(bin);
+        <div className="bin-device-groups">
+          {groupedBins.map((group) => (
+            <div className="bin-device-group" key={group.deviceId}>
+              <h3 className="bin-device-group-title">{group.deviceId}</h3>
 
-            return (
-              <article className="bin-card" key={bin.id}>
-                <div className="bin-card-header">
-                  <strong>{bin.deviceId}</strong>
-                  <StatusBadge status={bin.status} />
-                </div>
+              <div className="bin-grid">
+                {group.bins.map((bin) => {
+                  const usage = getBinUsagePercentage(bin);
+                  const usageLevel = getBinUsageLevel(usage);
 
-                <p>{bin.binType}</p>
+                  return (
+                    <article className="bin-card" key={bin.id}>
+                      <div className="bin-card-header">
+                        <strong>{bin.binType}</strong>
+                        <StatusBadge status={bin.status} />
+                      </div>
 
-                <div className="progress-track">
-                  <div
-                    className="progress-bar"
-                    style={{ width: `${Math.min(usage, 100)}%` }}
-                  />
-                </div>
+                      <div className="progress-track">
+                        <div
+                          className={`progress-bar progress-bar-${usageLevel.toLowerCase()}`}
+                          style={{ width: `${Math.min(usage, 100)}%` }}
+                        />
+                      </div>
 
-                <div className="bin-card-footer">
-                  <span>
-                    {bin.itemCount} / {bin.capacity}
-                  </span>
-                  <span>{usage}%</span>
-                </div>
+                      <div className="bin-card-footer">
+                        <span>
+                          {bin.itemCount} / {bin.capacity}
+                        </span>
+                        <span>{usage}%</span>
+                      </div>
 
-                <button
-                  className="reset-bin-button"
-                  onClick={() => resetBin(bin.deviceId, bin.binType)}
-                >
-                  수거함 비우기
-                </button>
-              </article>
-            );
-          })}
+                      <button
+                        className="reset-bin-button"
+                        onClick={() => resetBin(bin.deviceId, bin.binType)}
+                      >
+                        수거함 비우기
+                      </button>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 

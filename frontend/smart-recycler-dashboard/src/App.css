@@ -187,6 +187,18 @@ th {
   font-size: 22px;
 }
 
+.bin-device-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.bin-device-group-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: #cbd5e1;
+}
+
 .bin-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(180px, 1fr));
@@ -206,9 +218,8 @@ th {
   align-items: center;
 }
 
-.bin-card p {
-  margin: 12px 0;
-  color: #94a3b8;
+.bin-card-header .status-badge {
+  margin-top: -8px;
 }
 
 .progress-track {
@@ -221,6 +232,18 @@ th {
 .progress-bar {
   height: 100%;
   background: #38bdf8;
+}
+
+.progress-bar-normal {
+  background: #22c55e;
+}
+
+.progress-bar-warning {
+  background: #f59e0b;
+}
+
+.progress-bar-full {
+  background: #ef4444;
 }
 
 .bin-card-footer {
