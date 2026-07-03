@@ -201,6 +201,19 @@ const failedCommandCount = deviceCommands.filter(
   );
 };
 
+const STATUS_ALLOWED_COMMANDS = {
+  RUNNING: ['EMERGENCY_STOP', 'ENTER_MAINTENANCE', 'RESTART_DEVICE'],
+  STOPPED: ['RESUME_OPERATION', 'RESTART_DEVICE'],
+  MAINTENANCE: ['EXIT_MAINTENANCE', 'RESTART_DEVICE', 'EMERGENCY_STOP'],
+  OFFLINE: [],
+  ERROR: ['RESTART_DEVICE'],
+};
+
+const isCommandAllowedForStatus = (device, commandType) => {
+  const allowedCommands = STATUS_ALLOWED_COMMANDS[device.status];
+  return Boolean(allowedCommands && allowedCommands.includes(commandType));
+};
+
 const isCommandButtonDisabled = (device, commandType) => {
   if (commandSubmitting) {
     return true;
@@ -210,27 +223,23 @@ const isCommandButtonDisabled = (device, commandType) => {
     return true;
   }
 
+  return !isCommandAllowedForStatus(device, commandType);
+};
+
+const getCommandDisabledReason = (device, commandType) => {
+  if (hasPendingCommand(device.deviceId)) {
+    return 'Pending command exists';
+  }
+
   if (device.status === 'OFFLINE') {
-    return true;
+    return 'Device is offline';
   }
 
-  if (commandType === 'EMERGENCY_STOP') {
-    return device.status === 'STOPPED';
+  if (isCommandAllowedForStatus(device, commandType)) {
+    return '';
   }
 
-  if (commandType === 'RESUME_OPERATION') {
-    return device.status === 'RUNNING';
-  }
-
-  if (commandType === 'ENTER_MAINTENANCE') {
-    return device.status === 'MAINTENANCE';
-  }
-
-  if (commandType === 'EXIT_MAINTENANCE') {
-    return device.status !== 'MAINTENANCE';
-  }
-
-  return false;
+  return `Not available while device is ${device.status}`;
 };
 
   const sortingResultDeviceIds = Array.from(
@@ -437,6 +446,7 @@ const isCommandButtonDisabled = (device, commandType) => {
     <button
       className="command-button danger"
       disabled={isCommandButtonDisabled(device, 'EMERGENCY_STOP')}
+      title={getCommandDisabledReason(device, 'EMERGENCY_STOP')}
       onClick={() =>
         createDeviceCommand(
           device.deviceId,
@@ -451,6 +461,7 @@ const isCommandButtonDisabled = (device, commandType) => {
     <button
       className="command-button"
       disabled={isCommandButtonDisabled(device, 'RESUME_OPERATION')}
+      title={getCommandDisabledReason(device, 'RESUME_OPERATION')}
       onClick={() =>
         createDeviceCommand(
           device.deviceId,
@@ -465,6 +476,7 @@ const isCommandButtonDisabled = (device, commandType) => {
     <button
       className="command-button secondary"
       disabled={isCommandButtonDisabled(device, 'ENTER_MAINTENANCE')}
+      title={getCommandDisabledReason(device, 'ENTER_MAINTENANCE')}
       onClick={() =>
         createDeviceCommand(
           device.deviceId,
@@ -479,6 +491,7 @@ const isCommandButtonDisabled = (device, commandType) => {
     <button
       className="command-button secondary"
       disabled={isCommandButtonDisabled(device, 'EXIT_MAINTENANCE')}
+      title={getCommandDisabledReason(device, 'EXIT_MAINTENANCE')}
       onClick={() =>
         createDeviceCommand(
           device.deviceId,
@@ -493,6 +506,7 @@ const isCommandButtonDisabled = (device, commandType) => {
     <button
       className="command-button"
       disabled={isCommandButtonDisabled(device, 'RESTART_DEVICE')}
+      title={getCommandDisabledReason(device, 'RESTART_DEVICE')}
       onClick={() =>
         createDeviceCommand(
           device.deviceId,
