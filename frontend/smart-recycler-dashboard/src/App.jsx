@@ -368,6 +368,49 @@ const getCommandDisabledReason = (device, commandType) => {
     }))
     .sort((a, b) => a.deviceId.localeCompare(b.deviceId));
 
+  const selectedDeviceDetail = (() => {
+    if (globalDeviceFilter === 'ALL') {
+      return null;
+    }
+
+    const device = devices.find((d) => d.deviceId === globalDeviceFilter);
+    const deviceBins = bins.filter((bin) => bin.deviceId === globalDeviceFilter);
+    const deviceSortingResults = sortingResults.filter(
+      (result) => result.deviceId === globalDeviceFilter
+    );
+    const deviceErrorEvents = errorEvents.filter(
+      (event) => event.deviceId === globalDeviceFilter
+    );
+
+    const averageUsage =
+      deviceBins.length === 0
+        ? 0
+        : Math.round(
+            deviceBins.reduce((sum, bin) => sum + getBinUsagePercentage(bin), 0) /
+              deviceBins.length
+          );
+
+    const openErrorCount = deviceErrorEvents.filter(
+      (event) => (event.eventStatus ?? 'OPEN') === 'OPEN'
+    ).length;
+
+    const failedSortingCount = deviceSortingResults.filter(
+      (result) => result.status === 'FAILED'
+    ).length;
+
+    return {
+      deviceId: globalDeviceFilter,
+      status: device?.status,
+      lastHeartbeatAt: device?.lastHeartbeatAt ?? device?.updatedAt,
+      binCount: deviceBins.length,
+      averageUsage,
+      openErrorCount,
+      sortingResultCount: deviceSortingResults.length,
+      failedSortingCount,
+      pendingCommandExists: hasPendingCommand(globalDeviceFilter),
+    };
+  })();
+
   return (
     <main className="page">
       <header className="dashboard-header">
@@ -424,6 +467,68 @@ const getCommandDisabledReason = (device, commandType) => {
 <SummaryCard title="대기 명령" value={pendingCommandCount} />
 <SummaryCard title="완료 명령" value={completedCommandCount} />
 <SummaryCard title="실패 명령" value={failedCommandCount} />
+      </section>
+
+      <section className="panel">
+        <div className="panel-header">
+          <h2>Device Detail</h2>
+          <span>{globalDeviceFilter === 'ALL' ? 'no device selected' : globalDeviceFilter}</span>
+        </div>
+
+        {selectedDeviceDetail === null ? (
+          <p className="activity-empty">Select a device to see details</p>
+        ) : (
+          <div className="bin-summary-list">
+            <div className="bin-summary-item">
+              <span>Device ID</span>
+              <strong>{selectedDeviceDetail.deviceId}</strong>
+            </div>
+
+            <div className="bin-summary-item">
+              <span>Status</span>
+              <StatusBadge status={selectedDeviceDetail.status} />
+            </div>
+
+            <div className="bin-summary-item">
+              <span>Last Heartbeat</span>
+              <strong>{formatDateTime(selectedDeviceDetail.lastHeartbeatAt)}</strong>
+            </div>
+
+            <div className="bin-summary-item">
+              <span>Bins</span>
+              <strong>{selectedDeviceDetail.binCount}</strong>
+            </div>
+
+            <div className="bin-summary-item">
+              <span>Average Bin Usage</span>
+              <strong>{selectedDeviceDetail.averageUsage}%</strong>
+            </div>
+
+            <div className="bin-summary-item">
+              <span>Open Error Events</span>
+              <strong>{selectedDeviceDetail.openErrorCount}</strong>
+            </div>
+
+            <div className="bin-summary-item">
+              <span>Sorting Results</span>
+              <strong>{selectedDeviceDetail.sortingResultCount}</strong>
+            </div>
+
+            <div className="bin-summary-item">
+              <span>Failed Sorting Results</span>
+              <strong>{selectedDeviceDetail.failedSortingCount}</strong>
+            </div>
+
+            <div className="bin-summary-item">
+              <span>Pending Command</span>
+              {selectedDeviceDetail.pendingCommandExists ? (
+                <StatusBadge status="PENDING" />
+              ) : (
+                <span className="resolved-text">없음</span>
+              )}
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="panel">
