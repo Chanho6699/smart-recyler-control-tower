@@ -80,6 +80,24 @@ body {
   color: #fecaca;
 }
 
+.alert-banner {
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.alert-banner-ok {
+  background: #14532d;
+  color: #bbf7d0;
+}
+
+.alert-banner-danger {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(160px, 1fr));

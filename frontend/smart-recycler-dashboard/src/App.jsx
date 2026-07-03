@@ -208,6 +208,45 @@ const fleetHealthSummary = {
     .length,
 };
 
+const alertSummary = {
+  offlineDeviceCount: devices.filter((device) => device.status === 'OFFLINE').length,
+  errorDeviceCount: devices.filter((device) => device.status === 'ERROR').length,
+  openErrorCount: errorEvents.filter(
+    (event) => (event.eventStatus ?? 'OPEN') === 'OPEN'
+  ).length,
+  failedSortingCount: sortingResults.filter((result) => result.status === 'FAILED')
+    .length,
+  pendingCommandCount: deviceCommands.filter((command) => command.status === 'PENDING')
+    .length,
+};
+
+const alertMessages = [];
+
+if (alertSummary.openErrorCount > 0) {
+  alertMessages.push(`${alertSummary.openErrorCount} open errors`);
+}
+
+if (alertSummary.offlineDeviceCount > 0) {
+  alertMessages.push(`${alertSummary.offlineDeviceCount} offline device${alertSummary.offlineDeviceCount > 1 ? 's' : ''}`);
+}
+
+if (alertSummary.errorDeviceCount > 0) {
+  alertMessages.push(`${alertSummary.errorDeviceCount} error device${alertSummary.errorDeviceCount > 1 ? 's' : ''}`);
+}
+
+if (alertSummary.failedSortingCount > 0) {
+  alertMessages.push(`${alertSummary.failedSortingCount} failed sorting results`);
+}
+
+if (alertSummary.pendingCommandCount > 0) {
+  alertMessages.push(`${alertSummary.pendingCommandCount} pending command${alertSummary.pendingCommandCount > 1 ? 's' : ''}`);
+}
+
+const hasCriticalAlert = alertMessages.length > 0;
+const alertBannerMessage = hasCriticalAlert
+  ? alertMessages.join(' · ')
+  : 'Fleet is operating normally';
+
   const hasPendingCommand = (deviceId) => {
   return deviceCommands.some(
     (command) =>
@@ -454,6 +493,12 @@ const getCommandDisabledReason = (device, commandType) => {
           </button>
         </div>
       </header>
+
+      <div
+        className={`alert-banner ${hasCriticalAlert ? 'alert-banner-danger' : 'alert-banner-ok'}`}
+      >
+        {alertBannerMessage}
+      </div>
 
       {errorMessage && <div className="error-banner">{errorMessage}</div>}
 
